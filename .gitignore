@@ -1,2 +1,19 @@
 *.pyc
 __pycache__/
+
+# Images files
+*.jpg
+*.png
+*.gif
+*.webp
+
+# Video files
+*.mp4
+*.webm
+*.mkv
+*.mov
+*.avi
+
+# Audio files
+*.mp3
+*.wav

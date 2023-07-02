@@ -5,7 +5,6 @@ import tempfile
 import numpy
 import PIL.Image
 
-from ..misc import format_ffmpeg_timestamp
 from ..tool import Tool
 
 
@@ -16,7 +15,7 @@ def parse_arg_duration(duration_string):
     else:
         up, down = duration_string.split("/")
         total_seconds = float(up) / float(down)
-    return format_ffmpeg_timestamp(total_seconds)
+    return Tool.fts(total_seconds)
 
 
 class Average(Tool):
@@ -70,5 +69,4 @@ class Average(Tool):
         with tempfile.TemporaryDirectory() as folder:
             self.extract_frames(folder)
             self.merge_frames(folder)
-        if os.path.isfile(self.image_path):
-            os.startfile(self.image_path)
+        self.startfile(self.image_path)
