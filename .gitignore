@@ -1,5 +1,10 @@
+# Cache
 *.pyc
 __pycache__/
+
+# Build
+dist/
+*.egg-info
 
 # Images files
 *.jpg
