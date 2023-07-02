@@ -16,14 +16,17 @@ class Tool:
         return cls(*[getattr(args, key) for key in args_keys], **{key: getattr(args, key) for key in kwargs_keys})
 
     @staticmethod
-    def ffmpeg(*args, ffmpeg_path="ffmpeg", wait=True):
-        process = subprocess.Popen([
+    def ffmpeg(*args, loglevel="error", show_stats=True, ffmpeg_path="ffmpeg", wait=True):
+        cmd = [
             ffmpeg_path,
             "-hide_banner",
             "-loglevel",
-            "error",
-            *args
-        ])
+            loglevel,
+        ]
+        if show_stats:
+            cmd.append("-stats")
+        cmd += args
+        process = subprocess.Popen(cmd)
         if wait:
             process.wait()
 
@@ -44,5 +47,5 @@ class Tool:
     
     @staticmethod
     def startfile(path):
-        if os.path.isfile(path):
+        if os.path.isfile(path) or os.path.isdir(path):
             os.startfile(path)
