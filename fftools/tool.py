@@ -1,5 +1,20 @@
+import json
 import os
 import subprocess
+import typing
+
+
+def parse_r_frame_rate(string):
+    up, down = string.split("/")
+    return float(up) / float(down)
+
+
+class FFProbeResult(typing.NamedTuple):
+    width: int
+    height: int
+    framerate: float
+    duration: float
+    size: int
 
 
 class Tool:
@@ -13,10 +28,47 @@ class Tool:
 
     @classmethod
     def from_keys(cls, args, args_keys, kwargs_keys):
-        return cls(*[getattr(args, key) for key in args_keys], **{key: getattr(args, key) for key in kwargs_keys})
+        return cls(
+            *[getattr(args, key) for key in args_keys],
+            **{key: getattr(args, key) for key in kwargs_keys})
+    
+    @staticmethod
+    def probe(path, ffprobe_path="ffprobe"):
+        cmd = [
+            ffprobe_path,
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
+            "-show_format",
+            "-show_streams",
+            path
+        ]
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True)
+        data = json.loads(result.stdout)
+        width = None
+        height = None
+        framerate = None
+        duration = None
+        size = None
+        for stream in data["streams"]:
+            if stream["codec_type"] == "video":
+                width = stream["width"]
+                height = stream["height"]
+                framerate = parse_r_frame_rate(stream["r_frame_rate"])
+                break
+        if "duration" in data["format"]:
+            duration = float(data["format"]["duration"])
+        size = int(data["format"]["size"])
+        return FFProbeResult(width, height, framerate, duration, size)
 
     @staticmethod
-    def ffmpeg(*args, loglevel="error", show_stats=True, ffmpeg_path="ffmpeg", wait=True):
+    def ffmpeg(*args, loglevel="error", show_stats=True, ffmpeg_path="ffmpeg", 
+               wait=True):
         cmd = [
             ffmpeg_path,
             "-hide_banner",
@@ -47,5 +99,7 @@ class Tool:
     
     @staticmethod
     def startfile(path):
+        if path is None:
+            return
         if os.path.isfile(path) or os.path.isdir(path):
             os.startfile(path)
