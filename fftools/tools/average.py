@@ -49,7 +49,6 @@ class Average(Tool):
             "-t",
             self.duration,
             os.path.join(folder, "%06d.png"),
-            "-y"
         )
 
     def merge_frames(self, folder):

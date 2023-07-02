@@ -41,7 +41,6 @@ class Shots(Tool):
             "-frame_pts",
             "true",
             os.path.join(self.frames_path, "%07d.jpg"),
-            "-y"
         )
     
     def load_frame(self, image_path):

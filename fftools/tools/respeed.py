@@ -77,7 +77,6 @@ class Respeed(Tool):
                     "-c:v",
                     "copy",
                     self.output_path,
-                    "-y"
                 )
         else:
             self.ffmpeg(
@@ -87,6 +86,5 @@ class Respeed(Tool):
                 "-vf",
                 f"setpts={1/self.speedup}*PTS",
                 self.output_path,
-                "-y"
             )
         self.startfile(self.output_path)

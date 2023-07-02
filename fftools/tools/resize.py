@@ -120,6 +120,5 @@ class Resize(Tool):
             "-vf",
             vf,
             self.output_path,
-            "-y"
         )
         self.startfile(self.output_path)

@@ -46,7 +46,6 @@ class Preview(Tool):
             "-vsync",
             "0",
             os.path.join(folder, "%06d.jpg"),
-            "-y"
         )
 
     def merge_frames(self, folder):

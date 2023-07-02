@@ -68,7 +68,7 @@ class Tool:
 
     @staticmethod
     def ffmpeg(*args, loglevel="error", show_stats=True, ffmpeg_path="ffmpeg", 
-               wait=True):
+               wait=True, overwrite=True):
         cmd = [
             ffmpeg_path,
             "-hide_banner",
@@ -78,6 +78,8 @@ class Tool:
         if show_stats:
             cmd.append("-stats")
         cmd += args
+        if overwrite:
+            cmd.append("-y")
         process = subprocess.Popen(cmd)
         if wait:
             process.wait()

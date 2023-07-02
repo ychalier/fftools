@@ -57,6 +57,6 @@ class Concat(Tool):
             ]
             if self.copy:
                 args += ["-c", "copy"]
-            args += [self.output_path, "-y"]
+            args.append(self.output_path)
             self.ffmpeg(*args)
         self.startfile(self.output_path)
