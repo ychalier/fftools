@@ -3,24 +3,12 @@ import re
 import tempfile
 
 from ..tool import Tool
-
-
-def parse_duration(string):
-    match = re.match(r"^(\d+:)?(\d+:)?(\d+)(\.\d+)?$", string)
-    seconds = int(match.group(3))
-    if match.group(2) is not None:
-        seconds += 3600 * int(match.group(1)[:-1]) + 60 * int(match.group(2)[:-1])
-    elif match.group(1) is not None:
-        seconds += 60 * int(match.group(1)[:-1])
-    if match.group(4) is not None:
-        seconds += int(match.group(4)[1:].ljust(3, "0")) / 1000
-    return seconds
     
 
 def parse_target(target, probe):
     if re.match(r"^x(\d+)(\.\d+)?$", target.strip()):     
         return float(target.strip()[1:])
-    duration = parse_duration(target)
+    duration = Tool.parse_duration(target)
     return probe.duration / duration
 
 

@@ -1,5 +1,7 @@
 import json
+import glob
 import os
+import re
 import subprocess
 import typing
 
@@ -105,3 +107,28 @@ class Tool:
             return
         if os.path.isfile(path) or os.path.isdir(path):
             os.startfile(path)
+
+    @staticmethod
+    def parse_source_paths(argstrings):
+        source_paths = []
+        for argstring in argstrings:
+            if os.path.isfile(argstring):
+                source_paths.append(argstring)
+            elif os.path.isdir(argstring):
+                for filename in next(os.walk(argstring))[2]:
+                    source_paths.append(os.path.join(argstring, filename))
+            else:
+                source_paths += glob.glob(argstring)
+        return [os.path.realpath(path) for path in source_paths]
+    
+    @staticmethod
+    def parse_duration(string):
+        match = re.match(r"^(\d+:)?(\d+:)?(\d+)(\.\d+)?$", string)
+        seconds = int(match.group(3))
+        if match.group(2) is not None:
+            seconds += 3600 * int(match.group(1)[:-1]) + 60 * int(match.group(2)[:-1])
+        elif match.group(1) is not None:
+            seconds += 60 * int(match.group(1)[:-1])
+        if match.group(4) is not None:
+            seconds += int(match.group(4)[1:].ljust(3, "0")) / 1000
+        return seconds
