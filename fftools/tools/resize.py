@@ -110,10 +110,10 @@ class Resize(Tool):
         self.compute_output_parameters()
         vf = ""
         if self.fit == "cover":
-            vf += f"crop={self.crop_width}:{self.crop_height}"
+            vf += f"crop={self.crop_width}:{self.crop_height},"
         elif self.fit == "contain":
-            vf += f"pad={self.pad_width}:{self.pad_height}:(ow-iw)/2:(oh-ih)/2"
-        vf += f",scale={self.width}:{self.height}:flags={self.filter}"
+            vf += f"pad={self.pad_width}:{self.pad_height}:(ow-iw)/2:(oh-ih)/2,"
+        vf += f"scale={self.width}:{self.height}:flags={self.filter}"
         self.ffmpeg(
             "-i",
             self.input_path,
