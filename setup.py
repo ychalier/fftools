@@ -9,7 +9,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='fftools',
-    version='1.1.0',
+    version='1.1.1',
     packages=find_packages(),
     include_package_data=True,
     description='A set of tools for FFmpeg',

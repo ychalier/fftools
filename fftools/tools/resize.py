@@ -12,6 +12,8 @@ def parse_aspect_ratio(string):
 
 
 def parse_bytes(string):
+    if string is None:
+        return None
     match = re.match(r"^(\d+)(\.\d+)?([kmg])?[bo]?$", string, re.IGNORECASE)
     if match is None:
         return int(string)
