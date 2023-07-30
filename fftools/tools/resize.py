@@ -1,3 +1,4 @@
+import math
 import os
 import re
 import types
@@ -8,6 +9,22 @@ from ..tool import Tool
 def parse_aspect_ratio(string):
     up, down = re.split("[/:]", string)
     return float(up) / float(down)
+
+
+def parse_bytes(string):
+    match = re.match(r"^(\d+)(\.\d+)?([kmg])?[bo]?$", string, re.IGNORECASE)
+    if match is None:
+        return int(string)
+    base = int(match.group(1))
+    if match.group(2) is not None:
+        base = float(match.group(1) + match.group(2))
+    factor = {
+        None: 1,
+        "k": 1000,
+        "m": 1000000,
+        "g": 1000000000,
+    }[match.group(3)]
+    return int(base * factor)
 
 
 RESIZE_FILTERS = [
@@ -33,7 +50,7 @@ class Resize(Tool):
 
     NAME = "resize"
 
-    def __init__(self, input_path, width=None, height=None, scale=1, aspect_ratio=None, fit="fill", expand=False, filter="bicubic"):
+    def __init__(self, input_path, width=None, height=None, scale=1, aspect_ratio=None, fit="fill", expand=False, filter="bicubic", bytes_limit=None):
         Tool.__init__(self)
         self.input_path = input_path
         self.width = width
@@ -43,6 +60,7 @@ class Resize(Tool):
         self.fit = fit
         self.expand = expand
         self.filter = filter
+        self.bytes_limit = parse_bytes(bytes_limit)
 
     def compute_output_parameters(self, input_path):
         params = types.SimpleNamespace(
@@ -59,6 +77,8 @@ class Resize(Tool):
             pad_height=None,
         )
         probe_result = self.probe(input_path)
+        if self.bytes_limit is not None:
+            params.scale = math.sqrt(self.bytes_limit / probe_result.size)
         base_aspect_ratio = probe_result.width / probe_result.height
         if params.aspect_ratio is None:
             if params.width is not None and params.height is not None:
@@ -125,10 +145,11 @@ class Resize(Tool):
         parser.add_argument("-f", "--fit", type=str, default="fill", choices=["fill", "cover", "contain"])
         parser.add_argument("-e", "--expand", action="store_true")
         parser.add_argument("-l", "--filter", type=str, default="bicubic", choices=RESIZE_FILTERS)
+        parser.add_argument("-b", "--bytes-limit", type=str, default=None, help="Maximum file size (roughly)")
 
     @classmethod
     def from_args(cls, args):
-        return cls.from_keys(args, ["input_path"], ["width", "height", "scale", "aspect_ratio", "fit", "expand", "filter"])     
+        return cls.from_keys(args, ["input_path"], ["width", "height", "scale", "aspect_ratio", "fit", "expand", "filter", "bytes_limit"])     
     
     def run(self):
         input_paths = self.parse_source_paths([self.input_path])
