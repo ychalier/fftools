@@ -1,5 +1,6 @@
 import os
 import re
+import types
 
 from ..tool import Tool
 
@@ -42,54 +43,77 @@ class Resize(Tool):
         self.fit = fit
         self.expand = expand
         self.filter = filter
-        self.crop_width = None
-        self.crop_height = None
-        self.pad_width = None
-        self.pad_height = None
-        self.probe_result = None
-        self.output_path = None
 
-    def compute_output_parameters(self):
-        self.probe_result = self.probe(self.input_path)
-        base_aspect_ratio = self.probe_result.width / self.probe_result.height
-        if self.aspect_ratio is None:
-            if self.width is not None and self.height is not None:
-                self.aspect_ratio = self.width / self.height
+    def compute_output_parameters(self, input_path):
+        params = types.SimpleNamespace(
+            width=self.width,
+            height=self.height,
+            scale=self.scale,
+            aspect_ratio=self.aspect_ratio,
+            fit=self.fit,
+            expand=self.expand,
+            filter=self.filter,
+            crop_width=None,
+            crop_height=None,
+            pad_width=None,
+            pad_height=None,
+        )
+        probe_result = self.probe(input_path)
+        base_aspect_ratio = probe_result.width / probe_result.height
+        if params.aspect_ratio is None:
+            if params.width is not None and params.height is not None:
+                params.aspect_ratio = params.width / params.height
             else:
-                self.aspect_ratio = base_aspect_ratio
-        if self.width is None and self.height is None:
-            if self.aspect_ratio >= base_aspect_ratio:
-                if self.expand:
-                    self.height = self.probe_result.height
+                params.aspect_ratio = base_aspect_ratio
+        if params.width is None and params.height is None:
+            if params.aspect_ratio >= base_aspect_ratio:
+                if params.expand:
+                    params.height = probe_result.height
                 else:
-                    self.width = self.probe_result.width
+                    params.width = probe_result.width
             else:
-                if self.expand:
-                    self.width = self.probe_result.width
+                if params.expand:
+                    params.width = probe_result.width
                 else:
-                    self.height = self.probe_result.height
-        if self.width is not None and self.height is None:
-            self.height = self.width / self.aspect_ratio
-        if self.width is None and self.height is not None:
-            self.width = self.height * self.aspect_ratio
-        self.width = round(self.width * self.scale)
-        self.height = round(self.height * self.scale)
-        splitext = os.path.splitext(self.input_path)
-        self.output_path = splitext[0] + f"_{self.width}_{self.height}" + splitext[1]
-        self.crop_width = self.probe_result.width
-        self.crop_height = self.probe_result.height
-        if self.fit == "cover":
-            if self.aspect_ratio > base_aspect_ratio:
-                self.crop_height = self.probe_result.width / self.aspect_ratio
-            elif self.aspect_ratio < base_aspect_ratio:
-                self.crop_width = self.probe_result.height * self.aspect_ratio
-        self.pad_width = self.probe_result.width
-        self.pad_height = self.probe_result.height
-        if self.fit == "contain":
-            if self.aspect_ratio < base_aspect_ratio:
-                self.pad_height = self.probe_result.width / self.aspect_ratio
-            elif self.aspect_ratio > base_aspect_ratio:
-                self.pad_width = self.probe_result.height * self.aspect_ratio
+                    params.height = probe_result.height
+        if params.width is not None and params.height is None:
+            params.height = params.width / params.aspect_ratio
+        if params.width is None and params.height is not None:
+            params.width = params.height * params.aspect_ratio
+        params.width = round(params.width * params.scale)
+        params.height = round(params.height * params.scale)
+        splitext = os.path.splitext(input_path)
+        output_path = splitext[0] + f"_{params.width}_{params.height}" + splitext[1]
+        params.crop_width = probe_result.width
+        params.crop_height = probe_result.height
+        if params.fit == "cover":
+            if params.aspect_ratio > base_aspect_ratio:
+                params.crop_height = probe_result.width / params.aspect_ratio
+            elif params.aspect_ratio < base_aspect_ratio:
+                params.crop_width = probe_result.height * params.aspect_ratio
+        params.pad_width = probe_result.width
+        params.pad_height = probe_result.height
+        if params.fit == "contain":
+            if params.aspect_ratio < base_aspect_ratio:
+                params.pad_height = probe_result.width / params.aspect_ratio
+            elif params.aspect_ratio > base_aspect_ratio:
+                params.pad_width = probe_result.height * params.aspect_ratio
+        return params, output_path
+
+    def process_file(self, input_path, params, output_path):
+        vf = ""
+        if params.fit == "cover":
+            vf += f"crop={params.crop_width}:{params.crop_height},"
+        elif params.fit == "contain":
+            vf += f"pad={params.pad_width}:{params.pad_height}:(ow-iw)/2:(oh-ih)/2,"
+        vf += f"scale={params.width}:{params.height}:flags={params.filter}"
+        self.ffmpeg(
+            "-i",
+            input_path,
+            "-vf",
+            vf,
+            output_path,
+        )
 
     @staticmethod
     def add_arguments(parser):
@@ -107,18 +131,10 @@ class Resize(Tool):
         return cls.from_keys(args, ["input_path"], ["width", "height", "scale", "aspect_ratio", "fit", "expand", "filter"])     
     
     def run(self):
-        self.compute_output_parameters()
-        vf = ""
-        if self.fit == "cover":
-            vf += f"crop={self.crop_width}:{self.crop_height},"
-        elif self.fit == "contain":
-            vf += f"pad={self.pad_width}:{self.pad_height}:(ow-iw)/2:(oh-ih)/2,"
-        vf += f"scale={self.width}:{self.height}:flags={self.filter}"
-        self.ffmpeg(
-            "-i",
-            self.input_path,
-            "-vf",
-            vf,
-            self.output_path,
-        )
-        self.startfile(self.output_path)
+        input_paths = self.parse_source_paths([self.input_path])
+        output_path = None
+        for input_path in input_paths:
+            params, output_path = self.compute_output_parameters(input_path)
+            self.process_file(input_path, params, output_path)
+        if len(input_paths) == 1:
+            self.startfile(output_path)
