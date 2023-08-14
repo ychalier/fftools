@@ -1,3 +1,4 @@
+import dateutil.parser
 import json
 import glob
 import os
@@ -17,6 +18,7 @@ class FFProbeResult(typing.NamedTuple):
     framerate: float
     duration: float
     size: int
+    creation: int
 
 
 class Tool:
@@ -57,6 +59,7 @@ class Tool:
         framerate = None
         duration = None
         size = None
+        creation = None
         for stream in data["streams"]:
             if stream["codec_type"] == "video":
                 width = stream["width"]
@@ -66,7 +69,9 @@ class Tool:
         if "duration" in data["format"]:
             duration = float(data["format"]["duration"])
         size = int(data["format"]["size"])
-        return FFProbeResult(width, height, framerate, duration, size)
+        if "tags" in data["format"] and "creation_time" in data["format"]["tags"]:
+            creation = int(dateutil.parser.parse(data["format"]["tags"]["creation_time"]).timestamp())
+        return FFProbeResult(width, height, framerate, duration, size, creation)
 
     @staticmethod
     def ffmpeg(*args, loglevel="error", show_stats=True, ffmpeg_path="ffmpeg", 

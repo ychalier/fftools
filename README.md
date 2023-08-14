@@ -12,10 +12,12 @@ See also:
 
 Tool | Description
 ---- | -----------
+Annotate | Overlay a timestamp over a video
 Average | Extract frames from a video and merge them into a single photo
 Concat | Concatenate several videos into one
 Merge | Merge images into a single video
 Preview | Generate a table of preview snapshots for a video
+Probe | Show information about a video file
 Resize | Resize a video or an image
 Respeed | Change the speed or the duration of a video
 Shots | Extract all shots from a movie
