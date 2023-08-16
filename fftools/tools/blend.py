@@ -18,14 +18,26 @@ def parse_arg_duration(duration_string):
     return Tool.fts(total_seconds)
 
 
-class Average(Tool):
+OPERATIONS = {
+    "average": lambda a: numpy.average(a, axis=0),
+    "brighter": lambda a: numpy.max(a, axis=0),
+    "darker": lambda a: numpy.min(a, axis=0),
+    "sum": lambda a: numpy.sum(a, axis=0),
+    "difference": lambda a: a[0] - numpy.sum(a[1:], axis=0),
+}
 
-    NAME = "average"
 
-    def __init__(self, video_path, image_path, start="00:00:00", duration="1/10"):
+class Blend(Tool):
+
+    NAME = "blend"
+
+    def __init__(self, video_path, image_path, operation="average", start="00:00:00", duration="1/10"):
         Tool.__init__(self)
         self.video_path = video_path
         self.image_path = image_path
+        self.operation = operation
+        if self.operation not in OPERATIONS:
+            raise ValueError(f"Illegal operation '{self.operation}'")
         self.start = start
         self.duration = parse_arg_duration(duration)
 
@@ -33,12 +45,13 @@ class Average(Tool):
     def add_arguments(parser):
         parser.add_argument("video_path", type=str, help="Path to the source video")
         parser.add_argument("image_path", type=str, help="Path to the output image")
+        parser.add_argument("-o", "--operation", type=str, help="Operation to blend the images together", default="average", choices=OPERATIONS.keys())
         parser.add_argument("-s", "--start", type=str, help="Starting timestamp, in FFMPEG format (HH:MM:SS.FFF)", default="00:00:00.000")
         parser.add_argument("-d", "--duration", type=str, help="Exposure duration as a camera setting in seconds (1/100, 1/10, 1/4, 2, 30, ...)", default="1/10")
 
     @classmethod
     def from_args(cls, args):
-        return cls.from_keys(args, ["video_path", "image_path"], ["start", "duration"])
+        return cls.from_keys(args, ["video_path", "image_path"], ["operation", "start", "duration"])
     
     def extract_frames(self, folder):
         self.ffmpeg(
@@ -61,8 +74,8 @@ class Average(Tool):
             with PIL.Image.open(path) as file:
                 images.append(numpy.array(file))
         stack = numpy.array(images)
-        average = numpy.average(stack, axis=0)
-        PIL.Image.fromarray(numpy.uint8(average)).save(self.image_path)
+        merger = OPERATIONS[self.operation](stack)
+        PIL.Image.fromarray(numpy.uint8(merger)).save(self.image_path)
     
     def run(self):
         with tempfile.TemporaryDirectory() as folder:
