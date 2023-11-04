@@ -48,12 +48,13 @@ class Tool:
             "-show_streams",
             path
         ]
-        result = subprocess.run(
+        result = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True)
-        data = json.loads(result.stdout)
+            stderr=subprocess.PIPE)
+        result.wait()
+        stdout = result.stdout.read()
+        data = json.loads(stdout)
         width = None
         height = None
         framerate = None
