@@ -7,6 +7,8 @@ from .probe import Probe
 from .resize import Resize
 from .respeed import Respeed
 from .shots import Shots
+from .split import Split
+
 
 TOOL_LIST = [
     Annotate,
@@ -18,4 +20,5 @@ TOOL_LIST = [
     Resize,
     Respeed,
     Shots,
+    Split,
 ]

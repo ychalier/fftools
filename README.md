@@ -21,3 +21,4 @@ Probe | Show information about a video file
 Resize | Resize a video or an image
 Respeed | Change the speed or the duration of a video
 Shots | Extract all shots from a movie
+Split | Split a video into parts with a duration limit
