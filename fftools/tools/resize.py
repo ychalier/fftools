@@ -52,7 +52,7 @@ class Resize(Tool):
 
     NAME = "resize"
 
-    def __init__(self, input_path, width=None, height=None, scale=1, aspect_ratio=None, fit="fill", expand=False, filter="bicubic", bytes_limit=None):
+    def __init__(self, input_path, width=None, height=None, scale=1, aspect_ratio=None, fit="fill", expand=False, filter="bicubic", bytes_limit=None, output_folder=None):
         Tool.__init__(self)
         self.input_path = input_path
         self.width = width
@@ -63,6 +63,7 @@ class Resize(Tool):
         self.expand = expand
         self.filter = filter
         self.bytes_limit = parse_bytes(bytes_limit)
+        self.output_folder = output_folder
 
     def compute_output_parameters(self, input_path):
         params = types.SimpleNamespace(
@@ -106,6 +107,8 @@ class Resize(Tool):
         params.height = round(params.height * params.scale)
         splitext = os.path.splitext(input_path)
         output_path = splitext[0] + f"_{params.width}_{params.height}" + splitext[1]
+        if self.output_folder is not None:
+            output_path = os.path.join(self.output_folder, os.path.basename(output_path))
         params.crop_width = probe_result.width
         params.crop_height = probe_result.height
         if params.fit == "cover":
@@ -147,11 +150,12 @@ class Resize(Tool):
         parser.add_argument("-f", "--fit", type=str, default="fill", choices=["fill", "cover", "contain"])
         parser.add_argument("-e", "--expand", action="store_true")
         parser.add_argument("-l", "--filter", type=str, default="bicubic", choices=RESIZE_FILTERS)
-        parser.add_argument("-b", "--bytes-limit", type=str, default=None, help="Maximum file size (roughly)")
+        parser.add_argument("-b", "--bytes-limit", type=str, default=None, help="maximum file size (roughly)")
+        parser.add_argument("-o", "--output-folder", type=str, default=None, help="output folder")
 
     @classmethod
     def from_args(cls, args):
-        return cls.from_keys(args, ["input_path"], ["width", "height", "scale", "aspect_ratio", "fit", "expand", "filter", "bytes_limit"])     
+        return cls.from_keys(args, ["input_path"], ["width", "height", "scale", "aspect_ratio", "fit", "expand", "filter", "bytes_limit", "output_folder"])     
     
     def run(self):
         input_paths = self.parse_source_paths([self.input_path])
