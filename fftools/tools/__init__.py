@@ -1,5 +1,5 @@
 from .annotate import Annotate
-from .average import Average
+from .blend import Blend
 from .concat import Concat
 from .merge import Merge
 from .preview import Preview
@@ -12,7 +12,7 @@ from .split import Split
 
 TOOL_LIST = [
     Annotate,
-    Average,
+    Blend,
     Concat,
     Merge,
     Preview,
