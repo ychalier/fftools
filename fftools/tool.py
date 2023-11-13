@@ -52,7 +52,6 @@ class Tool:
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
-        result.wait()
         stdout = result.stdout.read()
         data = json.loads(stdout)
         width = None

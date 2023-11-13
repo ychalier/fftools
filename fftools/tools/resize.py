@@ -78,8 +78,12 @@ class Resize(Tool):
             crop_height=None,
             pad_width=None,
             pad_height=None,
+            base_width=None,
+            base_height=None,
         )
         probe_result = self.probe(input_path)
+        params.base_width = probe_result.width
+        params.base_height = probe_result.height
         if self.bytes_limit is not None:
             params.scale = math.sqrt(self.bytes_limit / probe_result.size)
         base_aspect_ratio = probe_result.width / probe_result.height
