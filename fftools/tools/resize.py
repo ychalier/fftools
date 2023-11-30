@@ -52,11 +52,12 @@ class Resize(Tool):
 
     NAME = "resize"
 
-    def __init__(self, input_path, width=None, height=None, scale=1, aspect_ratio=None, fit="fill", expand=False, filter="bicubic", bytes_limit=None, output_folder=None):
+    def __init__(self, input_path, width=None, height=None, longest_edge=None, scale=1, aspect_ratio=None, fit="fill", expand=False, filter="bicubic", bytes_limit=None, output_folder=None):
         Tool.__init__(self)
         self.input_path = input_path
         self.width = width
         self.height = height
+        self.longest_edge = longest_edge
         self.scale = scale
         self.aspect_ratio = parse_aspect_ratio(aspect_ratio) if aspect_ratio is not None else None
         self.fit = fit
@@ -82,6 +83,13 @@ class Resize(Tool):
             base_height=None,
         )
         probe_result = self.probe(input_path)
+        if self.longest_edge is not None:
+            if probe_result.width > probe_result.height:
+                params.width = self.longest_edge
+                params.height = None
+            else:
+                params.width = None
+                params.height = self.longest_edge
         params.base_width = probe_result.width
         params.base_height = probe_result.height
         if self.bytes_limit is not None:
@@ -149,6 +157,7 @@ class Resize(Tool):
         parser.add_argument("input_path", type=str, help="input path")
         parser.add_argument("-w", "--width", type=int, default=None, help="target width in pixels")
         parser.add_argument("-g", "--height", type=int, default=None, help="target height in pixels")
+        parser.add_argument("-d", "--longest-edge", type=int, default=None, help="longest edge size in pixels")
         parser.add_argument("-s", "--scale", type=float, default=1, help="scaling factor")
         parser.add_argument("-a", "--aspect-ratio", type=str, default=None, help="target aspect ratio")
         parser.add_argument("-f", "--fit", type=str, default="fill", choices=["fill", "cover", "contain"])
@@ -159,7 +168,7 @@ class Resize(Tool):
 
     @classmethod
     def from_args(cls, args):
-        return cls.from_keys(args, ["input_path"], ["width", "height", "scale", "aspect_ratio", "fit", "expand", "filter", "bytes_limit", "output_folder"])     
+        return cls.from_keys(args, ["input_path"], ["width", "height", "longest_edge", "scale", "aspect_ratio", "fit", "expand", "filter", "bytes_limit", "output_folder"])     
     
     def run(self):
         input_paths = self.parse_source_paths([self.input_path])
