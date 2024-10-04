@@ -15,6 +15,7 @@ Tool | Description
 Annotate | Overlay a timestamp over a video
 Blend | Extract frames from a video and merge them into a single photo
 Concat | Concatenate several videos into one
+Cut | Cut an image or a video into parts of given width/height
 Merge | Merge images into a single video
 Preview | Generate a table of preview snapshots for a video
 Probe | Show information about a video file

@@ -1,6 +1,7 @@
 from .annotate import Annotate
 from .blend import Blend
 from .concat import Concat
+from .cut import Cut
 from .merge import Merge
 from .preview import Preview
 from .probe import Probe
@@ -14,6 +15,7 @@ TOOL_LIST = [
     Annotate,
     Blend,
     Concat,
+    Cut,
     Merge,
     Preview,
     Probe,
