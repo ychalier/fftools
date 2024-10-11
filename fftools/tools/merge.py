@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 
 from ..tool import Tool
 
@@ -25,6 +24,7 @@ class Merge(Tool):
         return cls.from_keys(args, ["video_path", "target", "frame_paths"], [])
 
     def run(self):
+        import re
         with Tool.tempdir() as folder:
             listpath = folder / "list.txt"
             with listpath.open("w") as file:

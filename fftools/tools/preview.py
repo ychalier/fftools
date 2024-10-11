@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import PIL.Image
-
 from ..tool import Tool
 
 
@@ -48,6 +46,7 @@ class Preview(Tool):
         )
 
     def merge_frames(self, folder: Path):
+        import PIL.Image
         image = None
         width, height = None, None
         for i, frame_path in enumerate(sorted(folder.glob("*.jpg"))):

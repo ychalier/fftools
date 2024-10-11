@@ -1,10 +1,6 @@
 import os
 from pathlib import Path
 
-import numpy
-import PIL.Image
-import tqdm
-
 from ..tool import Tool
 
 
@@ -40,7 +36,8 @@ class Shots(Tool):
             self.frames_path / "%07d.jpg",
         )
     
-    def load_frame(self, image_path: Path) -> numpy.ndarray:
+    def load_frame(self, image_path: Path):
+        import numpy, PIL.Image
         bins = list(range(0, 256, self.bin_width))
         with PIL.Image.open(image_path) as file:
             arr = numpy.array(file)
@@ -49,11 +46,13 @@ class Shots(Tool):
         b = numpy.histogram(numpy.ravel(arr[:,:,2]), bins=bins, density=True)[0]
         return numpy.stack([r, g, b])
     
-    def frame_comparator(self, left: numpy.ndarray, right: numpy.ndarray) -> bool:
+    def frame_comparator(self, left, right) -> bool:
+        import numpy
         diff = numpy.average(numpy.abs(left - right))
         return diff < self.threshold
     
     def delete_duplicates(self):
+        import tqdm
         paths = sorted(self.frames_path.glob("*.jpg"))
         frame_count = len(paths)
         removed_count = 0

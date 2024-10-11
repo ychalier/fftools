@@ -1,9 +1,4 @@
-import datetime
-import math
 from pathlib import Path
-
-import PIL.ImageFont
-import tqdm
 
 from ..tool import Tool
 
@@ -37,6 +32,7 @@ class Annotate(Tool):
         return cls.from_keys(args, ["input_path", "timestamp"], ["font_size", "font_path", "padding"])
     
     def process_file(self, input_path: Path, output_path: Path):
+        import datetime, math, tqdm, PIL.Image
         with Tool.tempdir() as tempdir:
             listfile_path = tempdir / "list.txt"
             with listfile_path.open("w") as listfile:
@@ -75,7 +71,8 @@ class Annotate(Tool):
             )
     
     def run(self):
-        self.font = PIL.ImageFont.truetype(self.font_filepath, size=self.font_size)
+        from PIL.ImageFont import truetype
+        self.font = truetype(self.font_filepath, size=self.font_size)
         input_paths = self.parse_source_paths([self.input_path])
         output_path = None
         for input_path in input_paths:

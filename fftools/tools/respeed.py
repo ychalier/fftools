@@ -1,10 +1,10 @@
 from pathlib import Path
-import re
 
 from ..tool import Tool, FFProbeResult
  
 
 def parse_target(target: str, probe: FFProbeResult):
+    import re
     if re.match(r"^x(\d+)(\.\d+)?$", target.strip()):     
         return float(target.strip()[1:])
     duration = Tool.parse_duration(target)

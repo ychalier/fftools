@@ -1,4 +1,3 @@
-import math
 from pathlib import Path
 
 from ..tool import Tool
@@ -28,6 +27,7 @@ class Cut(Tool):
     def process_file(self, input_path: Path):
         """https://ffmpeg.org/ffmpeg-filters.html#crop
         """
+        import math
         probe_result = self.probe(input_path)
         width = probe_result.width if self.max_width is None else self.max_width
         height = probe_result.height if self.max_height is None else self.max_height

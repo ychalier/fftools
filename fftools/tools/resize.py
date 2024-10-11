@@ -1,12 +1,11 @@
-import math
 from pathlib import Path
-import re
 import dataclasses
 
 from ..tool import Tool
 
 
 def parse_aspect_ratio(string: str | None) -> float | None:
+    import re
     if string is None:
         return None
     up, down = re.split("[/:]", string)
@@ -14,20 +13,21 @@ def parse_aspect_ratio(string: str | None) -> float | None:
 
 
 def parse_bytes(string: str | None) -> int | None:
+    import re
     if string is None:
         return None
-    match = re.match(r"^(\d+)(\.\d+)?([kmg])?[bo]?$", string, re.IGNORECASE)
-    if match is None:
+    m = re.match(r"^(\d+)(\.\d+)?([kmg])?[bo]?$", string, re.IGNORECASE)
+    if m is None:
         return int(string)
-    base = int(match.group(1))
-    if match.group(2) is not None:
-        base = float(match.group(1) + match.group(2))
+    base = int(m.group(1))
+    if m.group(2) is not None:
+        base = float(m.group(1) + m.group(2))
     factor = {
         None: 1,
         "k": 1000,
         "m": 1000000,
         "g": 1000000000,
-    }[match.group(3)]
+    }[m.group(3)]
     return int(base * factor)
 
 
@@ -92,6 +92,7 @@ class Resize(Tool):
         self.output_folder = output_folder
 
     def compute_output_parameters(self, input_path: Path) -> ResizeParameters:
+        import math
         params = ResizeParameters(
             path=None,
             width=self.width,

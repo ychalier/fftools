@@ -1,13 +1,10 @@
 from pathlib import Path
-import re
-
-import numpy
-import PIL.Image
 
 from ..tool import Tool
 
 
 def parse_arg_duration(duration_string: str) -> str:
+    import re
     match = re.match(r"^\d+$", duration_string)
     if match is not None:
         total_seconds = int(duration_string)
@@ -15,15 +12,6 @@ def parse_arg_duration(duration_string: str) -> str:
         up, down = duration_string.split("/")
         total_seconds = float(up) / float(down)
     return Tool.fts(total_seconds)
-
-
-OPERATIONS = {
-    "average": lambda a: numpy.average(a, axis=0),
-    "brighter": lambda a: numpy.max(a, axis=0),
-    "darker": lambda a: numpy.min(a, axis=0),
-    "sum": lambda a: numpy.sum(a, axis=0),
-    "difference": lambda a: a[0] - numpy.sum(a[1:], axis=0),
-}
 
 
 class Blend(Tool):
@@ -36,9 +24,21 @@ class Blend(Tool):
         Tool.__init__(self)
         self.video_path = Path(video_path)
         self.image_path = Path(image_path)
-        self.operation = operation
-        if self.operation not in OPERATIONS:
-            raise ValueError(f"Illegal operation '{self.operation}'")
+        self.operation = None
+        import numpy
+        match operation:
+            case "average":
+                self.operation = lambda a: numpy.average(a, axis=0)
+            case "brighter":
+                self.operation = lambda a: numpy.max(a, axis=0)
+            case "darker":
+                self.operation = lambda a: numpy.min(a, axis=0)
+            case "sum":
+                self.operation = lambda a: numpy.sum(a, axis=0)
+            case "difference":
+                self.operation = lambda a: a[0] - numpy.sum(a[1:], axis=0)
+            case _:
+                raise ValueError(f"Illegal operation '{self.operation}'")
         self.start = start
         self.duration = parse_arg_duration(duration)
 
@@ -46,7 +46,7 @@ class Blend(Tool):
     def add_arguments(parser):
         parser.add_argument("video_path", type=str, help="Path to the source video")
         parser.add_argument("image_path", type=str, help="Path to the output image")
-        parser.add_argument("-o", "--operation", type=str, help="Operation to blend the images together", default="average", choices=OPERATIONS.keys())
+        parser.add_argument("-o", "--operation", type=str, help="Operation to blend the images together", default="average", choices=["average", "brighter", "darker", "sum", "difference"])
         parser.add_argument("-s", "--start", type=str, help="Starting timestamp, in FFMPEG format (HH:MM:SS.FFF)", default="00:00:00.000")
         parser.add_argument("-d", "--duration", type=str, help="Exposure duration as a camera setting in seconds (1/100, 1/10, 1/4, 2, 30, ...)", default="1/10")
 
@@ -66,6 +66,7 @@ class Blend(Tool):
         )
 
     def merge_frames(self, folder: Path):
+        import numpy, PIL.Image
         frame_paths = list(filter(lambda p: p.is_file(), folder.glob("*")))
         if not frame_paths:
             raise FileNotFoundError("No frame to merge")
@@ -74,7 +75,7 @@ class Blend(Tool):
             with PIL.Image.open(frame_path) as file:
                 images.append(numpy.array(file))
         stack = numpy.array(images)
-        merger = OPERATIONS[self.operation](stack)
+        merger = self.operation(stack)
         PIL.Image.fromarray(numpy.uint8(merger)).save(self.image_path)
     
     def run(self):

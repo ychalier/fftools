@@ -1,15 +1,8 @@
 import argparse
 import contextlib
-import json
-import glob
 import os
 import pathlib
-import re
-import subprocess
-import tempfile
 import typing
-
-import dateutil.parser
 
 
 def parse_r_frame_rate(string: str) -> float:
@@ -44,6 +37,7 @@ class Tool:
     
     @staticmethod
     def probe(path: pathlib.Path, ffprobe="ffprobe") -> FFProbeResult:
+        import json, subprocess, dateutil.parser
         cmd = [
             ffprobe,
             "-v",
@@ -85,6 +79,7 @@ class Tool:
     def ffmpeg(*args: str, loglevel: str = "error", show_stats: bool = True,
                ffmpeg: str = "ffmpeg", wait: bool = True,
                overwrite: bool = True):
+        import subprocess
         cmd = [
             ffmpeg,
             "-hide_banner",
@@ -124,6 +119,7 @@ class Tool:
 
     @staticmethod
     def parse_source_paths(argstrings: list[str | pathlib.Path]) -> list[pathlib.Path]:
+        import glob
         source_paths = []
         for argstring in argstrings:
             if os.path.isfile(argstring):
@@ -137,6 +133,7 @@ class Tool:
     
     @staticmethod
     def parse_duration(string: str) -> float:
+        import re
         m = re.match(r"^(\d+:)?(\d+:)?(\d+)(\.\d+)?$", string)
         seconds = int(m.group(3))
         if m.group(2) is not None:
@@ -150,5 +147,6 @@ class Tool:
     @contextlib.contextmanager
     @staticmethod
     def tempdir():
+        import tempfile
         with tempfile.TemporaryDirectory() as td:
             yield pathlib.Path(td)
