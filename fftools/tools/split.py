@@ -38,10 +38,12 @@ class Split(Tool):
         return stops
 
     def process_file(self, input_path: Path):
+        import math
         probe_result = self.probe(input_path)
         stops = self.compute_stops(probe_result.duration)
+        padi = max(1, math.ceil(math.log10(len(stops) - 1)))
         for i, (time_start, time_end) in enumerate(zip(stops, stops[1:])):
-            output_path = input_path.with_stem(input_path.stem + f"_{i:03d}")
+            output_path = input_path.with_stem(input_path.stem + f"_{i:0{padi}d}")
             if self.output_folder is not None:
                 output_path = self.output_folder / output_path.name
             self.ffmpeg(

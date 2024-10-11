@@ -33,7 +33,7 @@ class Shots(Tool):
             "-i", self.video_path,
             "-vsync", "vfr",
             "-frame_pts", "true",
-            self.frames_path / "%07d.jpg",
+            self.frames_path / "%06d.jpg",
         )
     
     def load_frame(self, image_path: Path):

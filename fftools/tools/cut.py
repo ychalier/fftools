@@ -33,9 +33,12 @@ class Cut(Tool):
         height = probe_result.height if self.max_height is None else self.max_height
         rows = math.ceil(probe_result.height / height)
         cols = math.ceil(probe_result.width / width)
+        padi = max(1, math.ceil(math.log10(rows)))
+        padj = max(1, math.ceil(math.log10(cols)))
         for i in range(rows):
             for j in range(cols):
-                output_path = input_path.with_stem(input_path.stem + f"_{i:02d}_{j:02d}")
+                a = 10
+                output_path = input_path.with_stem(input_path.stem + f"_{i:0{padi}d}_{j:0{padj}d}")
                 self.ffmpeg(
                     "-i",
                     input_path,
