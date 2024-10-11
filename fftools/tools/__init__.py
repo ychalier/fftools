@@ -1,4 +1,4 @@
-from .annotate import Annotate
+from .timestamp import Timestamp
 from .blend import Blend
 from .concat import Concat
 from .cut import Cut
@@ -12,7 +12,7 @@ from .split import Split
 
 
 TOOL_LIST = [
-    Annotate,
+    Timestamp,
     Blend,
     Concat,
     Cut,

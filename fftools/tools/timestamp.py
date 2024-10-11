@@ -3,9 +3,9 @@ from pathlib import Path
 from ..tool import Tool
 
 
-class Annotate(Tool):
+class Timestamp(Tool):
 
-    NAME = "annotate"
+    NAME = "timestamp"
 
     def __init__(self, input_path: str | Path,
                  timestamp: int | None = None, font_size: int = 36,
