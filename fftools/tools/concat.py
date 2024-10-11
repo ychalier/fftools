@@ -1,5 +1,4 @@
-import os
-import tempfile
+from pathlib import Path
 
 from ..tool import Tool
 
@@ -11,9 +10,9 @@ class Concat(Tool):
 
     NAME = "concat"
 
-    def __init__(self, output_path, source_paths, copy=False):
+    def __init__(self, output_path: str, source_paths: str, copy: bool = False):
         Tool.__init__(self)
-        self.output_path = output_path
+        self.output_path = Path(output_path)
         self.source_paths = self.parse_source_paths(source_paths)
         self.copy = copy
 
@@ -28,18 +27,15 @@ class Concat(Tool):
         return cls.from_keys(args, ["output_path", "source_paths"], ["copy"])     
     
     def run(self):
-        with tempfile.TemporaryDirectory() as folder:
-            listpath = os.path.join(folder, "list.txt")
-            with open(listpath, "w") as file:
+        with Tool.tempdir() as folder:
+            listpath = folder / "list.txt"
+            with listpath.open("w") as file:
                 for source_path in self.source_paths:
-                    file.write(f"file '{source_path}'\n")
+                    file.write(f"file '{source_path.absolute()}'\n")
             args = [
-                "-f",
-                "concat",
-                "-safe",
-                "0",
-                "-i",
-                listpath
+                "-f", "concat",
+                "-safe", "0",
+                "-i", listpath
             ]
             if self.copy:
                 args += ["-c", "copy"]

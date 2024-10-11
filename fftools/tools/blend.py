@@ -1,6 +1,5 @@
-import os
+from pathlib import Path
 import re
-import tempfile
 
 import numpy
 import PIL.Image
@@ -8,7 +7,7 @@ import PIL.Image
 from ..tool import Tool
 
 
-def parse_arg_duration(duration_string):
+def parse_arg_duration(duration_string: str) -> str:
     match = re.match(r"^\d+$", duration_string)
     if match is not None:
         total_seconds = int(duration_string)
@@ -31,10 +30,12 @@ class Blend(Tool):
 
     NAME = "blend"
 
-    def __init__(self, video_path, image_path, operation="average", start="00:00:00", duration="1/10"):
+    def __init__(self, video_path: str, image_path: str,
+                 operation: str = "average", start: str = "00:00:00",
+                 duration: str = "1/10"):
         Tool.__init__(self)
-        self.video_path = video_path
-        self.image_path = image_path
+        self.video_path = Path(video_path)
+        self.image_path = Path(image_path)
         self.operation = operation
         if self.operation not in OPERATIONS:
             raise ValueError(f"Illegal operation '{self.operation}'")
@@ -53,7 +54,7 @@ class Blend(Tool):
     def from_args(cls, args):
         return cls.from_keys(args, ["video_path", "image_path"], ["operation", "start", "duration"])
     
-    def extract_frames(self, folder):
+    def extract_frames(self, folder: Path):
         self.ffmpeg(
             "-i",
             self.video_path,
@@ -61,24 +62,23 @@ class Blend(Tool):
             self.start,
             "-t",
             self.duration,
-            os.path.join(folder, "%06d.png"),
+            folder / "%06d.png",
         )
 
-    def merge_frames(self, folder):
-        filenames = next(os.walk(folder))[2]
-        if not filenames:
+    def merge_frames(self, folder: Path):
+        frame_paths = list(filter(lambda p: p.is_file(), folder.glob("*")))
+        if not frame_paths:
             raise FileNotFoundError("No frame to merge")
         images = []
-        for filename in filenames:
-            path = os.path.join(folder, filename)
-            with PIL.Image.open(path) as file:
+        for frame_path in frame_paths:
+            with PIL.Image.open(frame_path) as file:
                 images.append(numpy.array(file))
         stack = numpy.array(images)
         merger = OPERATIONS[self.operation](stack)
         PIL.Image.fromarray(numpy.uint8(merger)).save(self.image_path)
     
     def run(self):
-        with tempfile.TemporaryDirectory() as folder:
+        with Tool.tempdir() as folder:
             self.extract_frames(folder)
             self.merge_frames(folder)
         self.startfile(self.image_path)

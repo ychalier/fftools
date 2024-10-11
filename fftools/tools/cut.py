@@ -1,5 +1,5 @@
-import os
 import math
+from pathlib import Path
 
 from ..tool import Tool
 
@@ -8,9 +8,10 @@ class Cut(Tool):
 
     NAME = "cut"
 
-    def __init__(self, input_path, max_width=None, max_height=None):
+    def __init__(self, input_path: str, max_width: int | None = None,
+                 max_height: int | None = None):
         Tool.__init__(self)
-        self.input_path = input_path
+        self.input_path = Path(input_path)
         self.max_width = max_width
         self.max_height = max_height
     
@@ -24,20 +25,17 @@ class Cut(Tool):
     def from_args(cls, args):
         return cls.from_keys(args, ["input_path"], ["max_width", "max_height"])
     
-    def process_file(self, input_path):
-        """
-        https://ffmpeg.org/ffmpeg-filters.html#crop
+    def process_file(self, input_path: Path):
+        """https://ffmpeg.org/ffmpeg-filters.html#crop
         """
         probe_result = self.probe(input_path)
         width = probe_result.width if self.max_width is None else self.max_width
         height = probe_result.height if self.max_height is None else self.max_height
         rows = math.ceil(probe_result.height / height)
         cols = math.ceil(probe_result.width / width)
-        splitext = os.path.splitext(input_path)
-        base_path = splitext[0]
         for i in range(rows):
             for j in range(cols):
-                output_path = base_path + f"_{i:02d}_{j:02d}" + splitext[1]
+                output_path = input_path.with_stem(input_path.stem + f"_{i:02d}_{j:02d}")
                 self.ffmpeg(
                     "-i",
                     input_path,

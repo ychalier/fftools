@@ -1,6 +1,5 @@
-import os
+from pathlib import Path
 import re
-import tempfile
 
 from ..tool import Tool
 
@@ -9,9 +8,9 @@ class Merge(Tool):
 
     NAME = "merge"
 
-    def __init__(self, video_path, target, frame_paths):
+    def __init__(self, video_path: str, target: str, frame_paths: list[str]):
         Tool.__init__(self)
-        self.video_path = video_path
+        self.video_path = Path(video_path)
         self.target = target
         self.frame_paths = self.parse_source_paths(frame_paths)
     
@@ -26,29 +25,23 @@ class Merge(Tool):
         return cls.from_keys(args, ["video_path", "target", "frame_paths"], [])
 
     def run(self):
-        with tempfile.TemporaryDirectory() as folder:
-            listpath = os.path.join(folder, "list.txt")
-            with open(listpath, "w") as file:
+        with Tool.tempdir() as folder:
+            listpath = folder / "list.txt"
+            with listpath.open("w") as file:
                 for source_path in self.frame_paths:
-                    file.write(f"file '{source_path}'\n")
+                    file.write(f"file '{source_path.absolute()}'\n")
             if re.match(r"^\d+$", self.target):
                 framerate = int(self.target)
             else:
                 duration = self.parse_duration(self.target)
                 framerate = len(self.frame_paths) / duration
             self.ffmpeg(
-                "-r",
-                str(framerate),
-                "-f",
-                "concat",
-                "-safe",
-                "0",
-                "-i",
-                listpath,
-                "-c:v",
-                "libx264",
-                "-pix_fmt",
-                "yuv420p",
+                "-r", str(framerate),
+                "-f", "concat",
+                "-safe", "0",
+                "-i", listpath,
+                "-c:v", "libx264",
+                "-pix_fmt", "yuv420p",
                 self.video_path
             )
         self.startfile(self.video_path)

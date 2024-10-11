@@ -1,13 +1,18 @@
-import dateutil.parser
+import argparse
+import contextlib
 import json
 import glob
 import os
+import pathlib
 import re
 import subprocess
+import tempfile
 import typing
 
+import dateutil.parser
 
-def parse_r_frame_rate(string):
+
+def parse_r_frame_rate(string: str) -> float:
     up, down = string.split("/")
     return float(up) / float(down)
 
@@ -27,19 +32,20 @@ class Tool:
         pass
 
     @staticmethod
-    def add_arguments(parser):
+    def add_arguments(parser: argparse.ArgumentParser):
         pass
 
     @classmethod
-    def from_keys(cls, args, args_keys, kwargs_keys):
+    def from_keys(cls, args: argparse.Namespace, args_keys: list[str],
+                  kwargs_keys: list[str]):
         return cls(
             *[getattr(args, key) for key in args_keys],
             **{key: getattr(args, key) for key in kwargs_keys})
     
     @staticmethod
-    def probe(path, ffprobe_path="ffprobe"):
+    def probe(path: pathlib.Path, ffprobe="ffprobe") -> FFProbeResult:
         cmd = [
-            ffprobe_path,
+            ffprobe,
             "-v",
             "quiet",
             "-print_format",
@@ -71,13 +77,16 @@ class Tool:
         size = int(data["format"]["size"])
         if "tags" in data["format"] and "creation_time" in data["format"]["tags"]:
             creation = int(dateutil.parser.parse(data["format"]["tags"]["creation_time"]).timestamp())
+        else:
+            creation = int(os.path.getctime(path))
         return FFProbeResult(width, height, framerate, duration, size, creation)
 
     @staticmethod
-    def ffmpeg(*args, loglevel="error", show_stats=True, ffmpeg_path="ffmpeg", 
-               wait=True, overwrite=True):
+    def ffmpeg(*args: str, loglevel: str = "error", show_stats: bool = True,
+               ffmpeg: str = "ffmpeg", wait: bool = True,
+               overwrite: bool = True):
         cmd = [
-            ffmpeg_path,
+            ffmpeg,
             "-hide_banner",
             "-loglevel",
             loglevel,
@@ -92,29 +101,29 @@ class Tool:
             process.wait()
 
     @staticmethod
-    def format_timestamp(total_seconds):
+    def format_timestamp(total_seconds: float) -> str:
         h = int(total_seconds / 3600)
         m = int((total_seconds - 3600 * h) / 60)
         s = int((total_seconds - 3600 * h - 60 * m))
         ms = round((total_seconds - 3600 * h - 60 * m - s) * 1000)
-        return f"{str(h).rjust(2, '0')}:{str(m).rjust(2, '0')}:{str(s).rjust(2, '0')}.{str(ms).rjust(3, '0')}"
+        return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
     
     @staticmethod
-    def fts(ts):
+    def fts(ts: float) -> str:
         return Tool.format_timestamp(ts)
 
     def run(self):
         raise NotImplementedError
     
     @staticmethod
-    def startfile(path):
+    def startfile(path: pathlib.Path | None):
         if path is None:
             return
-        if os.path.isfile(path) or os.path.isdir(path):
+        if path.exists():
             os.startfile(path)
 
     @staticmethod
-    def parse_source_paths(argstrings):
+    def parse_source_paths(argstrings: list[str | pathlib.Path]) -> list[pathlib.Path]:
         source_paths = []
         for argstring in argstrings:
             if os.path.isfile(argstring):
@@ -124,16 +133,22 @@ class Tool:
                     source_paths.append(os.path.join(argstring, filename))
             else:
                 source_paths += glob.glob(argstring)
-        return [os.path.realpath(path) for path in source_paths]
+        return [pathlib.Path(path) for path in source_paths]
     
     @staticmethod
-    def parse_duration(string):
-        match = re.match(r"^(\d+:)?(\d+:)?(\d+)(\.\d+)?$", string)
-        seconds = int(match.group(3))
-        if match.group(2) is not None:
-            seconds += 3600 * int(match.group(1)[:-1]) + 60 * int(match.group(2)[:-1])
-        elif match.group(1) is not None:
-            seconds += 60 * int(match.group(1)[:-1])
-        if match.group(4) is not None:
-            seconds += int(match.group(4)[1:].ljust(3, "0")) / 1000
+    def parse_duration(string: str) -> float:
+        m = re.match(r"^(\d+:)?(\d+:)?(\d+)(\.\d+)?$", string)
+        seconds = int(m.group(3))
+        if m.group(2) is not None:
+            seconds += 3600 * int(m.group(1)[:-1]) + 60 * int(m.group(2)[:-1])
+        elif m.group(1) is not None:
+            seconds += 60 * int(m.group(1)[:-1])
+        if m.group(4) is not None:
+            seconds += int(m.group(4)[1:].ljust(3, "0")) / 1000
         return seconds
+    
+    @contextlib.contextmanager
+    @staticmethod
+    def tempdir():
+        with tempfile.TemporaryDirectory() as td:
+            yield pathlib.Path(td)

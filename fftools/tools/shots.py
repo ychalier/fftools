@@ -1,5 +1,5 @@
-import glob
 import os
+from pathlib import Path
 
 import numpy
 import PIL.Image
@@ -12,10 +12,11 @@ class Shots(Tool):
 
     NAME = "shots"
 
-    def __init__(self, video_path, frames_path, bin_width=10, threshold=0.002):
+    def __init__(self, video_path: str, frames_path: str, bin_width: int = 10,
+                 threshold: float = 0.002):
         Tool.__init__(self)
-        self.video_path = video_path
-        self.frames_path = frames_path
+        self.video_path = Path(video_path)
+        self.frames_path = Path(frames_path)
         self.bin_width = bin_width
         self.threshold = threshold
 
@@ -32,18 +33,14 @@ class Shots(Tool):
     
     def extract_keyframes(self):
         self.ffmpeg(
-            "-skip_frame",
-            "nokey",
-            "-i",
-            self.video_path,
-            "-vsync",
-            "vfr",
-            "-frame_pts",
-            "true",
-            os.path.join(self.frames_path, "%07d.jpg"),
+            "-skip_frame", "nokey",
+            "-i", self.video_path,
+            "-vsync", "vfr",
+            "-frame_pts", "true",
+            self.frames_path / "%07d.jpg",
         )
     
-    def load_frame(self, image_path):
+    def load_frame(self, image_path: Path) -> numpy.ndarray:
         bins = list(range(0, 256, self.bin_width))
         with PIL.Image.open(image_path) as file:
             arr = numpy.array(file)
@@ -52,12 +49,12 @@ class Shots(Tool):
         b = numpy.histogram(numpy.ravel(arr[:,:,2]), bins=bins, density=True)[0]
         return numpy.stack([r, g, b])
     
-    def frame_comparator(self, left, right):
+    def frame_comparator(self, left: numpy.ndarray, right: numpy.ndarray) -> bool:
         diff = numpy.average(numpy.abs(left - right))
         return diff < self.threshold
     
     def delete_duplicates(self):
-        paths = sorted(glob.glob(os.path.join(self.frames_path, "*.jpg")))
+        paths = sorted(self.frames_path.glob("*.jpg"))
         frame_count = len(paths)
         removed_count = 0
         if not paths:
@@ -73,7 +70,7 @@ class Shots(Tool):
         print("Removed", removed_count, "of", frame_count, "frames")
     
     def run(self):
-        os.makedirs(self.frames_path, exist_ok=True)
+        self.frames_path.mkdir(exist_ok=True)
         self.extract_keyframes()
         self.delete_duplicates()
         self.startfile(self.frames_path)

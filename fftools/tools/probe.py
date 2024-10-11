@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from ..tool import Tool
 
 
@@ -5,8 +7,8 @@ class Probe(Tool):
 
     NAME = "probe"
 
-    def __init__(self, input_path):
-        self.input_path = input_path
+    def __init__(self, input_path: str):
+        self.input_path = Path(input_path)
 
     @staticmethod
     def add_arguments(parser):

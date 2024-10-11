@@ -1,17 +1,19 @@
 import math
-import os
+from pathlib import Path
 import re
-import types
+import dataclasses
 
 from ..tool import Tool
 
 
-def parse_aspect_ratio(string):
+def parse_aspect_ratio(string: str | None) -> float | None:
+    if string is None:
+        return None
     up, down = re.split("[/:]", string)
     return float(up) / float(down)
 
 
-def parse_bytes(string):
+def parse_bytes(string: str | None) -> int | None:
     if string is None:
         return None
     match = re.match(r"^(\d+)(\.\d+)?([kmg])?[bo]?$", string, re.IGNORECASE)
@@ -43,6 +45,24 @@ RESIZE_FILTERS = [
 ]
 
 
+@dataclasses.dataclass
+class ResizeParameters:
+    path: Path
+    width: int 
+    height: int 
+    scale: float
+    aspect_ratio: float | None
+    fit: str
+    expand: bool 
+    filter: str
+    crop_width: int | None
+    crop_height: int | None
+    pad_width: int | None
+    pad_height: int | None
+    base_width: int | None
+    base_height: int | None
+
+
 class Resize(Tool):
     """
     @see https://ffmpeg.org/ffmpeg-filters.html#scale
@@ -52,22 +72,28 @@ class Resize(Tool):
 
     NAME = "resize"
 
-    def __init__(self, input_path, width=None, height=None, longest_edge=None, scale=1, aspect_ratio=None, fit="fill", expand=False, filter="bicubic", bytes_limit=None, output_folder=None):
+    def __init__(self, input_path: str, width: int | None = None,
+                 height: int | None = None, longest_edge: int | None = None,
+                 scale: float = 1, aspect_ratio: str | None = None,
+                 fit: str = "fill", expand: bool = False,
+                 filter: str = "bicubic", bytes_limit: str | None = None,
+                 output_folder: str | None = None):
         Tool.__init__(self)
-        self.input_path = input_path
+        self.input_path = Path(input_path)
         self.width = width
         self.height = height
         self.longest_edge = longest_edge
         self.scale = scale
-        self.aspect_ratio = parse_aspect_ratio(aspect_ratio) if aspect_ratio is not None else None
+        self.aspect_ratio = parse_aspect_ratio(aspect_ratio)
         self.fit = fit
         self.expand = expand
         self.filter = filter
         self.bytes_limit = parse_bytes(bytes_limit)
         self.output_folder = output_folder
 
-    def compute_output_parameters(self, input_path):
-        params = types.SimpleNamespace(
+    def compute_output_parameters(self, input_path: Path) -> ResizeParameters:
+        params = ResizeParameters(
+            path=None,
             width=self.width,
             height=self.height,
             scale=self.scale,
@@ -117,10 +143,9 @@ class Resize(Tool):
             params.width = params.height * params.aspect_ratio
         params.width = round(params.width * params.scale)
         params.height = round(params.height * params.scale)
-        splitext = os.path.splitext(input_path)
-        output_path = splitext[0] + f"_{params.width}_{params.height}" + splitext[1]
+        params.path = input_path.with_stem(input_path.stem + f"_{params.width}_{params.height}")
         if self.output_folder is not None:
-            output_path = os.path.join(self.output_folder, os.path.basename(output_path))
+            params.path = self.output_folder / params.path.name
         params.crop_width = probe_result.width
         params.crop_height = probe_result.height
         if params.fit == "cover":
@@ -135,9 +160,9 @@ class Resize(Tool):
                 params.pad_height = probe_result.width / params.aspect_ratio
             elif params.aspect_ratio > base_aspect_ratio:
                 params.pad_width = probe_result.height * params.aspect_ratio
-        return params, output_path
+        return params
 
-    def process_file(self, input_path, params, output_path):
+    def process_file(self, input_path: Path, params: ResizeParameters):
         vf = ""
         if params.fit == "cover":
             vf += f"crop={params.crop_width}:{params.crop_height},"
@@ -149,7 +174,7 @@ class Resize(Tool):
             input_path,
             "-vf",
             vf,
-            output_path,
+            params.path,
         )
 
     @staticmethod
@@ -172,9 +197,8 @@ class Resize(Tool):
     
     def run(self):
         input_paths = self.parse_source_paths([self.input_path])
-        output_path = None
         for input_path in input_paths:
-            params, output_path = self.compute_output_parameters(input_path)
-            self.process_file(input_path, params, output_path)
+            params = self.compute_output_parameters(input_path)
+            self.process_file(input_path, params)
         if len(input_paths) == 1:
-            self.startfile(output_path)
+            self.startfile(params.path)

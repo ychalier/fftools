@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from ..tool import Tool
 
@@ -7,14 +7,15 @@ class Split(Tool):
 
     NAME = "split"
 
-    def __init__(self, input_path, parts=None, duration=None, output_folder=None):
+    def __init__(self, input_path: str, parts: int | None = None,
+                 duration: str | None = None, output_folder: str | None = None):
         Tool.__init__(self)
-        self.input_path = input_path
+        self.input_path = Path(input_path)
         self.parts = parts
         self.duration = None if duration is None else self.parse_duration(duration)
         if self.parts is None and self.duration is None:
             raise ValueError("Parts or duration should be specified")
-        self.output_folder = output_folder
+        self.output_folder = None if output_folder is None else Path(output_folder)
 
     @staticmethod
     def add_arguments(parser):
@@ -27,35 +28,26 @@ class Split(Tool):
     def from_args(cls, args):
         return cls.from_keys(args, ["input_path"], ["parts", "duration", "output_folder"])     
     
-    def compute_stops(self, duration):
+    def compute_stops(self, duration: float):
         stops = []
-        limit = self.duration
-        if self.parts is not None:
-            limit = duration / self.parts
+        limit = self.duration if self.parts is None else duration / self.parts
         t = 0
         while t < duration + limit:
             stops.append(min(duration, t))
             t += limit
         return stops
 
-    def process_file(self, input_path):
+    def process_file(self, input_path: Path):
         probe_result = self.probe(input_path)
-        splitext = os.path.splitext(input_path)
-        base_path = splitext[0]
-        if self.output_folder is not None:
-            base_path = os.path.join(
-                self.output_folder,
-                os.path.basename(base_path))
         stops = self.compute_stops(probe_result.duration)
         for i, (time_start, time_end) in enumerate(zip(stops, stops[1:])):
-            output_path = base_path + f"_{i:03d}" + splitext[1]
+            output_path = input_path.with_stem(input_path.stem + f"_{i:03d}")
+            if self.output_folder is not None:
+                output_path = self.output_folder / output_path.name
             self.ffmpeg(
-                "-i",
-                input_path,
-                "-ss",
-                self.format_timestamp(time_start),
-                "-to",
-                self.format_timestamp(time_end),
+                "-i", input_path,
+                "-ss", self.format_timestamp(time_start),
+                "-to", self.format_timestamp(time_end),
                 output_path
             )
 
