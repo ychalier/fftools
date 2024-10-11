@@ -32,5 +32,8 @@ def main():
             break
     if tool is None:
         parser.exit(0)
-    tool.run()
+    try:
+        tool.run()
+    except KeyboardInterrupt:
+        print(OKBLUE + "Interrupting" + ENDC)
 
