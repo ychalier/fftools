@@ -18,12 +18,10 @@ class Blend(Tool):
 
     NAME = "blend"
 
-    def __init__(self, video_path: str, image_path: str,
-                 operation: str = "average", start: str = "00:00:00",
-                 duration: str = "1/10"):
+    def __init__(self, video_path: str, operation: str = "average",
+                 start: str = "00:00:00", duration: str = "1/10"):
         Tool.__init__(self)
         self.video_path = Path(video_path)
-        self.image_path = Path(image_path)
         self.operation = None
         import numpy
         match operation:
@@ -41,18 +39,21 @@ class Blend(Tool):
                 raise ValueError(f"Illegal operation '{self.operation}'")
         self.start = start
         self.duration = parse_arg_duration(duration)
+        self.image_path = self.video_path.with_suffix(".jpg").with_stem(
+            self.video_path.stem
+            + f"-{self.start.replace(':', '_')}-"
+            + f"{Tool.fts(Tool.parse_duration(self.start) + Tool.parse_duration(self.duration)).replace(':', '_')}")
 
     @staticmethod
     def add_arguments(parser):
         parser.add_argument("video_path", type=str, help="Path to the source video")
-        parser.add_argument("image_path", type=str, help="Path to the output image")
         parser.add_argument("-o", "--operation", type=str, help="Operation to blend the images together", default="average", choices=["average", "brighter", "darker", "sum", "difference"])
         parser.add_argument("-s", "--start", type=str, help="Starting timestamp, in FFMPEG format (HH:MM:SS.FFF)", default="00:00:00.000")
         parser.add_argument("-d", "--duration", type=str, help="Exposure duration as a camera setting in seconds (1/100, 1/10, 1/4, 2, 30, ...)", default="1/10")
 
     @classmethod
     def from_args(cls, args):
-        return cls.from_keys(args, ["video_path", "image_path"], ["operation", "start", "duration"])
+        return cls.from_keys(args, ["video_path"], ["operation", "start", "duration"])
     
     def extract_frames(self, folder: Path):
         self.ffmpeg(

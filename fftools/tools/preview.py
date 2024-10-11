@@ -7,24 +7,22 @@ class Preview(Tool):
 
     NAME = "preview"
 
-    def __init__(self, video_path: str, image_path: str, nrows: int = 3,
-                 ncols: int = 2):
+    def __init__(self, video_path: str, nrows: int = 3, ncols: int = 2):
         Tool.__init__(self)
         self.video_path = Path(video_path)
-        self.image_path = Path(image_path)
+        self.image_path = self.video_path.with_suffix(".jpg").with_stem(self.video_path.stem + "_preview")
         self.nrows = nrows
         self.ncols = ncols
 
     @staticmethod
     def add_arguments(parser):
         parser.add_argument("video_path", type=str, help="Path to the source video")
-        parser.add_argument("image_path", type=str, help="Path to the output image")
         parser.add_argument("-r", "--nrows", type=int, default=3)
         parser.add_argument("-c", "--ncols", type=int, default=2)
 
     @classmethod
     def from_args(cls, args):
-        return cls.from_keys(args, ["video_path", "image_path"], ["nrows", "ncols"])
+        return cls.from_keys(args, ["video_path"], ["nrows", "ncols"])
     
     def extract_frames(self, folder: Path):
         probe = self.probe(self.video_path)
