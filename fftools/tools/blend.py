@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from ..tool import Tool
+from ..tool import Tool, ArgumentError
 
 
 def parse_arg_duration(duration_string: str) -> str:
@@ -36,7 +36,7 @@ class Blend(Tool):
             case "difference":
                 self.operation = lambda a: a[0] - numpy.sum(a[1:], axis=0)
             case _:
-                raise ValueError(f"Illegal operation '{self.operation}'")
+                raise ArgumentError(f"Illegal operation '{self.operation}'")
         self.start = start
         self.duration = parse_arg_duration(duration)
         self.image_path = self.video_path.with_suffix(".jpg").with_stem(
@@ -70,7 +70,7 @@ class Blend(Tool):
         import numpy, PIL.Image
         frame_paths = list(filter(lambda p: p.is_file(), folder.glob("*")))
         if not frame_paths:
-            raise FileNotFoundError("No frame to merge")
+            raise ArgumentError("No frame to merge")
         images = []
         for frame_path in frame_paths:
             with PIL.Image.open(frame_path) as file:

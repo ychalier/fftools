@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from ..tool import Tool
+from ..tool import Tool, ArgumentError
 
 
 class Split(Tool):
@@ -14,7 +14,7 @@ class Split(Tool):
         self.parts = parts
         self.duration = None if duration is None else self.parse_duration(duration)
         if self.parts is None and self.duration is None:
-            raise ValueError("Parts or duration should be specified")
+            raise ArgumentError("Parts or duration should be specified")
         self.output_folder = None if output_folder is None else Path(output_folder)
 
     @staticmethod

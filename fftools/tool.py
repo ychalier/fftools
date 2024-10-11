@@ -10,6 +10,10 @@ def parse_r_frame_rate(string: str) -> float:
     return float(up) / float(down)
 
 
+class ArgumentError(ValueError):
+    pass
+
+
 class FFProbeResult(typing.NamedTuple):
     width: int
     height: int
