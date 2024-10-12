@@ -6,6 +6,7 @@ from ..tool import Tool
 class Merge(Tool):
 
     NAME = "merge"
+    DESC = "Merge mulitple images to create a single video file."
 
     def __init__(self, video_path: str, target: str, frame_paths: list[str]):
         Tool.__init__(self)

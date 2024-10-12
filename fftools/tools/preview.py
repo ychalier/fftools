@@ -6,6 +6,7 @@ from ..tool import Tool
 class Preview(Tool):
 
     NAME = "preview"
+    DESC = "Extract thumbnails of evenly spaced moments of a video."
 
     def __init__(self, video_path: str, nrows: int = 3, ncols: int = 2):
         Tool.__init__(self)

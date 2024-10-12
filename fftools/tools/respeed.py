@@ -20,6 +20,7 @@ def format_number(x: int | float) -> str:
 class Respeed(Tool):
 
     NAME = "respeed"
+    DESC = "Change the playback speed of a video, with smart features."
 
     def __init__(self, input_path: str, target: str, raw: bool = False):
         Tool.__init__(self)

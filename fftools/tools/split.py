@@ -6,6 +6,7 @@ from ..tool import Tool, ArgumentError
 class Split(Tool):
 
     NAME = "split"
+    DESC = "Split a video file into parts of same duration."
 
     def __init__(self, input_path: str, parts: int | None = None,
                  duration: str | None = None, output_folder: str | None = None):

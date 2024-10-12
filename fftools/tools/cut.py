@@ -6,6 +6,7 @@ from ..tool import Tool
 class Cut(Tool):
 
     NAME = "cut"
+    DESC = "Cut a media (image or video) in a grid given the size of the cells."
 
     def __init__(self, input_path: str, max_width: int | None = None,
                  max_height: int | None = None):

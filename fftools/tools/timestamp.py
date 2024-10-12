@@ -6,6 +6,7 @@ from ..tool import Tool
 class Timestamp(Tool):
 
     NAME = "timestamp"
+    DESC = "Add a timestamp over video given its creation datetime."
 
     def __init__(self, input_path: str | Path,
                  timestamp: int | None = None, font_size: int = 36,

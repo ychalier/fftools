@@ -71,6 +71,7 @@ class Resize(Tool):
     """
 
     NAME = "resize"
+    DESC = "Resize any media (image or video), with smart features."
 
     def __init__(self, input_path: str, width: int | None = None,
                  height: int | None = None, longest_edge: int | None = None,

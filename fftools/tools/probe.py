@@ -6,6 +6,7 @@ from ..tool import Tool
 class Probe(Tool):
 
     NAME = "probe"
+    DESC = "Display information about a media file."
 
     def __init__(self, input_path: str):
         self.input_path = Path(input_path)

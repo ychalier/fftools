@@ -9,6 +9,7 @@ class Concat(Tool):
     """
 
     NAME = "concat"
+    DESC = "Concatenate multiple video files into one video file."
 
     def __init__(self, output_path: str, source_paths: str, copy: bool = False):
         Tool.__init__(self)

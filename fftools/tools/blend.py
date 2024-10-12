@@ -17,6 +17,7 @@ def parse_arg_duration(duration_string: str) -> str:
 class Blend(Tool):
 
     NAME = "blend"
+    DESC = "Blend consecutive frames of a video into a single image."
 
     def __init__(self, video_path: str, operation: str = "average",
                  start: str = "00:00:00", duration: str = "1/10"):

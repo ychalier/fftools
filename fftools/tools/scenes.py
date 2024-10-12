@@ -4,9 +4,10 @@ from pathlib import Path
 from ..tool import Tool
 
 
-class Shots(Tool):
+class Scenes(Tool):
 
-    NAME = "shots"
+    NAME = "scenes"
+    DESC = "Extract a thumbnail of every different scene in a video."
 
     def __init__(self, video_path: str, frames_path: str, bin_width: int = 10,
                  threshold: float = 0.002):

@@ -7,7 +7,7 @@ from .preview import Preview
 from .probe import Probe
 from .resize import Resize
 from .respeed import Respeed
-from .shots import Shots
+from .scenes import Scenes
 from .split import Split
 
 
@@ -21,6 +21,6 @@ TOOL_LIST = [
     Probe,
     Resize,
     Respeed,
-    Shots,
+    Scenes,
     Split,
 ]

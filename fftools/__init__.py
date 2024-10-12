@@ -1,3 +1,5 @@
+"""Utilities for manipulating videos and images around FFmpeg features.
+"""
 import argparse
 
 from .tools import TOOL_LIST
@@ -16,10 +18,15 @@ UNDERLINE = '\033[4m'
 
 
 def main():
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description=__doc__)
     subparsers = parser.add_subparsers(dest="tool")
     for cls in TOOL_LIST:
-        subparser = subparsers.add_parser(cls.NAME, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        subparser = subparsers.add_parser(
+            cls.NAME, 
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            description=cls.DESC)
         cls.add_arguments(subparser)
     args = parser.parse_args()
     tool = None
