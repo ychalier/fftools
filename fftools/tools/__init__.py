@@ -1,4 +1,3 @@
-from .timestamp import Timestamp
 from .blend import Blend
 from .concat import Concat
 from .cut import Cut
@@ -9,10 +8,11 @@ from .resize import Resize
 from .respeed import Respeed
 from .scenes import Scenes
 from .split import Split
+from .stack import Stack
+from .timestamp import Timestamp
 
 
 TOOL_LIST = [
-    Timestamp,
     Blend,
     Concat,
     Cut,
@@ -23,4 +23,6 @@ TOOL_LIST = [
     Respeed,
     Scenes,
     Split,
+    Stack,
+    Timestamp,
 ]

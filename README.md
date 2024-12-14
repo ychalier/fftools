@@ -20,6 +20,7 @@ Preview | Generate a table of preview snapshots for a video
 Probe | Show information about a video file
 Resize | Resize a video or an image
 Respeed | Change the speed or the duration of a video
+Stack | Stack videos in a grid
 Scenes | Extract all shots from a movie
 Split | Split a video into parts with a duration limit
 Timestamp | Overlay a timestamp over a video
