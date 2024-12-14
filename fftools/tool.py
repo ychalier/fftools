@@ -131,8 +131,12 @@ class Tool:
             elif os.path.isdir(argstring):
                 for filename in next(os.walk(argstring))[2]:
                     source_paths.append(os.path.join(argstring, filename))
-            else:
+            elif isinstance(argstring, str):
                 source_paths += glob.glob(argstring)
+            elif isinstance(argstring, pathlib.Path):
+                source_paths += glob.glob(str(argstring))
+            else:
+                raise ValueError(f"Invalid argument type {type(argstring)}")
         return [pathlib.Path(path) for path in source_paths]
     
     @staticmethod
