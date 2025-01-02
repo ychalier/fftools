@@ -12,11 +12,13 @@ class Stack(Tool):
     NAME = "stack"
     DESC = "Stack videos in a grid"
 
-    def __init__(self, output_path: str, source_paths: str, draw_text: bool = True):
+    def __init__(self, output_path: str, source_paths: str,
+            draw_text: bool = True, shortest: bool = False):
         Tool.__init__(self)
         self.output_path = Path(output_path)
         self.source_paths = self.parse_source_paths(source_paths)
         self.draw_text = draw_text
+        self.shortest = shortest
         self.font_size = 72
         self.text_offset = 100
         self.font_file = "c\\:\\\\Windows\\\\Fonts\\\\arialbd.ttf"
@@ -26,10 +28,11 @@ class Stack(Tool):
         parser.add_argument("output_path", type=str, help="output path")
         parser.add_argument("source_paths", type=str, nargs="+", help="source paths")
         parser.add_argument("-t", "--draw-text", action="store_true", help="write filenames on videos")
+        parser.add_argument("-s", "--shortest", action="store_true", help="stop when the shortest input ends")
 
     @classmethod
     def from_args(cls, args):
-        return cls.from_keys(args, ["output_path", "source_paths"], ["draw_text"])
+        return cls.from_keys(args, ["output_path", "source_paths"], ["draw_text", "shortest"])
 
     def run(self):
         n = len(self.source_paths)
@@ -69,7 +72,10 @@ class Stack(Tool):
                 h = "h0"
             else:
                 h += f"+h{i}"
-        draw_arg += f"xstack=inputs={n}:layout={'|'.join(layout_arg)}[v]"
+        draw_arg += f"xstack=inputs={n}:layout={'|'.join(layout_arg)}"
+        if self.shortest:
+            draw_arg += ":shortest=1"
+        draw_arg += "[v]"
         filter_args.append(draw_arg)
         args += ["-filter_complex", ";".join(filter_args)]
         args += ["-map", "[v]"]
