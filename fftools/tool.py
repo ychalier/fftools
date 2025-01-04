@@ -2,6 +2,8 @@ import argparse
 import contextlib
 import os
 import pathlib
+import sys
+import subprocess
 import typing
 
 
@@ -119,7 +121,11 @@ class Tool:
         if path is None:
             return
         if path.exists():
-            os.startfile(path)
+            if sys.platform == "win32":
+                os.startfile(path)
+            else:
+                opener = "open" if sys.platform == "darwin" else "xdg-open"
+                subprocess.call([opener, path.as_posix()])
 
     @staticmethod
     def parse_source_paths(argstrings: list[str | pathlib.Path]) -> list[pathlib.Path]:
