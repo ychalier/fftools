@@ -1,9 +1,9 @@
 """Utilities for manipulating videos and images around FFmpeg features.
 """
 import argparse
+import traceback
 
 from .tools import TOOL_LIST
-from .tool import ArgumentError
 
 
 HEADER = '\033[95m'
@@ -21,7 +21,7 @@ def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description=__doc__)
-    subparsers = parser.add_subparsers(dest="tool")
+    subparsers = parser.add_subparsers(dest="tool", required=True)
     for cls in TOOL_LIST:
         subparser = subparsers.add_parser(
             cls.NAME, 
@@ -29,18 +29,15 @@ def main():
             description=cls.DESC)
         cls.add_arguments(subparser)
     args = parser.parse_args()
-    tool = None
     for cls in TOOL_LIST:
         if args.tool == cls.NAME:
-            try:
-                tool = cls.from_args(args)
-            except ArgumentError as err:
-                print(FAIL + f"Argument Error: {err}" + ENDC)
-            break
-    if tool is None:
-        parser.exit(0)
+            tool_cls = cls
+    del args.tool
     try:
-        tool.run()
+        tool_cls.run(args)
     except KeyboardInterrupt:
         print(OKBLUE + "Interrupting" + ENDC)
+    except Exception as err:
+        print(FAIL + f"Error: {err}" + ENDC)
+        traceback.print_exc()
 

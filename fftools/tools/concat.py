@@ -1,9 +1,10 @@
-from pathlib import Path
+import pathlib
 
-from ..tool import Tool
+from ..tool import ManyToOneTool
+from .. import utils
 
 
-class Concat(Tool):
+class Concat(ManyToOneTool):
     """
     @see https://trac.ffmpeg.org/wiki/Concatenate
     """
@@ -11,27 +12,20 @@ class Concat(Tool):
     NAME = "concat"
     DESC = "Concatenate multiple video files into one video file."
 
-    def __init__(self, output_path: str, source_paths: str, copy: bool = False):
-        Tool.__init__(self)
-        self.output_path = Path(output_path)
-        self.source_paths = self.parse_source_paths(source_paths)
+    def __init__(self, copy: bool = False):
+        ManyToOneTool.__init__(self)
         self.copy = copy
 
     @staticmethod
     def add_arguments(parser):
-        parser.add_argument("output_path", type=str, help="output path")
-        parser.add_argument("source_paths", type=str, nargs="+", help="source paths")
+        ManyToOneTool.add_arguments(parser)
         parser.add_argument("-c", "--copy", action="store_true", help="directly copy streams instead of reencoding them (faster but does not handle various sizes well)")
-
-    @classmethod
-    def from_args(cls, args):
-        return cls.from_keys(args, ["output_path", "source_paths"], ["copy"])     
     
-    def run(self):
-        with Tool.tempdir() as folder:
+    def process(self, input_paths: list[pathlib.Path], output_path: pathlib.Path):
+        with utils.tempdir() as folder:
             listpath = folder / "list.txt"
             with listpath.open("w") as file:
-                for source_path in self.source_paths:
+                for source_path in input_paths:
                     file.write(f"file '{source_path.absolute()}'\n")
             args = [
                 "-f", "concat",
@@ -40,6 +34,5 @@ class Concat(Tool):
             ]
             if self.copy:
                 args += ["-c", "copy"]
-            args.append(self.output_path)
-            self.ffmpeg(*args)
-        self.startfile(self.output_path)
+            args.append(output_path)
+            utils.ffmpeg(*args)

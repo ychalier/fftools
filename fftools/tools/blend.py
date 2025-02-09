@@ -1,29 +1,24 @@
-from pathlib import Path
+import pathlib
 
-from ..tool import Tool, ArgumentError
-
-
-def parse_arg_duration(duration_string: str) -> str:
-    import re
-    match = re.match(r"^\d+$", duration_string)
-    if match is not None:
-        total_seconds = int(duration_string)
-    else:
-        up, down = duration_string.split("/")
-        total_seconds = float(up) / float(down)
-    return Tool.fts(total_seconds)
+from ..tool import OneToOneTool
+from .. import utils
 
 
-class Blend(Tool):
+class Blend(OneToOneTool):
 
     NAME = "blend"
     DESC = "Blend consecutive frames of a video into a single image."
-
-    def __init__(self, video_path: str, operation: str = "average",
-                 start: str = "00:00:00", duration: str = "1/10"):
-        Tool.__init__(self)
-        self.video_path = Path(video_path)
-        self.operation = None
+    OUTPUT_PATH_TEMPLATE = "{parent}/{stem}_blend.png"
+    
+    def __init__(self,
+            template: str,
+            operation: str = "average",
+            start: str = "00:00:00",
+            duration: str = "1/10"):
+        OneToOneTool.__init__(self, template)
+        self.start = start
+        self.duration = utils.parse_fraction_duration(duration)
+        self.operation = lambda a: 0
         import numpy
         match operation:
             case "average":
@@ -37,51 +32,39 @@ class Blend(Tool):
             case "difference":
                 self.operation = lambda a: a[0] - numpy.sum(a[1:], axis=0)
             case _:
-                raise ArgumentError(f"Illegal operation '{self.operation}'")
-        self.start = start
-        self.duration = parse_arg_duration(duration)
-        self.image_path = self.video_path.with_suffix(".jpg").with_stem(
-            self.video_path.stem
-            + f"-{self.start.replace(':', '_')}-"
-            + f"{Tool.fts(Tool.parse_duration(self.start) + Tool.parse_duration(self.duration)).replace(':', '_')}")
+                raise ValueError(f"Illegal operation '{operation}'")
 
     @staticmethod
     def add_arguments(parser):
-        parser.add_argument("video_path", type=str, help="Path to the source video")
-        parser.add_argument("-o", "--operation", type=str, help="Operation to blend the images together", default="average", choices=["average", "brighter", "darker", "sum", "difference"])
+        OneToOneTool.add_arguments(parser)
+        parser.add_argument("-op", "--operation", type=str, help="Operation to blend the images together", default="average", choices=["average", "brighter", "darker", "sum", "difference"])
         parser.add_argument("-s", "--start", type=str, help="Starting timestamp, in FFMPEG format (HH:MM:SS.FFF)", default="00:00:00.000")
         parser.add_argument("-d", "--duration", type=str, help="Exposure duration as a camera setting in seconds (1/100, 1/10, 1/4, 2, 30, ...)", default="1/10")
 
-    @classmethod
-    def from_args(cls, args):
-        return cls.from_keys(args, ["video_path"], ["operation", "start", "duration"])
-    
-    def extract_frames(self, folder: Path):
-        self.ffmpeg(
-            "-i",
-            self.video_path,
-            "-ss",
-            self.start,
-            "-t",
-            self.duration,
+    def _extract_frames(self, input_path: pathlib.Path, folder: pathlib.Path):
+        utils.ffmpeg(
+            "-i", input_path.as_posix(),
+            "-ss", self.start,
+            "-t", self.duration,
             folder / "%06d.png",
         )
-
-    def merge_frames(self, folder: Path):
+    
+    def _merge_frames(self, folder: pathlib.Path, output_path: pathlib.Path):
         import numpy, PIL.Image
         frame_paths = list(filter(lambda p: p.is_file(), folder.glob("*")))
         if not frame_paths:
-            raise ArgumentError("No frame to merge")
+            raise RuntimeError("No frame to merge")
         images = []
         for frame_path in frame_paths:
             with PIL.Image.open(frame_path) as file:
                 images.append(numpy.array(file))
         stack = numpy.array(images)
         merger = self.operation(stack)
-        PIL.Image.fromarray(numpy.uint8(merger)).save(self.image_path)
+        PIL.Image.fromarray(numpy.uint8(merger)).save(output_path)
     
-    def run(self):
-        with Tool.tempdir() as folder:
-            self.extract_frames(folder)
-            self.merge_frames(folder)
-        self.startfile(self.image_path)
+    def process(self, input_path: pathlib.Path) -> pathlib.Path:
+        with utils.tempdir() as folder:
+            self._extract_frames(input_path, folder)
+            output_path = self.inflate(input_path)
+            self._merge_frames(folder, output_path)
+        return output_path

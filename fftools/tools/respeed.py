@@ -1,13 +1,14 @@
-from pathlib import Path
+import pathlib
 
-from ..tool import Tool, FFProbeResult
- 
+from ..tool import OneToOneTool
+from .. import utils
 
-def parse_target(target: str, probe: FFProbeResult):
+
+def parse_target(target: str, probe: utils.FFProbeResult):
     import re
-    if re.match(r"^x(\d+)(\.\d+)?$", target.strip()):     
+    if re.match(r"^x(\d+)(\.\d+)?$", target.strip()):
         return float(target.strip()[1:])
-    duration = Tool.parse_duration(target)
+    duration = utils.parse_duration(target)
     return probe.duration / duration
 
 
@@ -17,51 +18,48 @@ def format_number(x: int | float) -> str:
     return "%.2f" % x
 
 
-class Respeed(Tool):
+class Respeed(OneToOneTool):
 
     NAME = "respeed"
     DESC = "Change the playback speed of a video, with smart features."
+    OUTPUT_PATH_TEMPLATE = "{parent}/{stem}_x{speedup}{suffix}"
 
-    def __init__(self, input_path: str, target: str, raw: bool = False):
-        Tool.__init__(self)
-        self.input_path = Path(input_path)
-        self.probe_result = self.probe(input_path)
-        self.speedup = parse_target(target, self.probe_result)
-        self.output_path = self.input_path.with_stem(self.input_path.stem + f"x{format_number(self.speedup)}")
+    def __init__(self, template: str, target: str, raw: bool = False):
+        OneToOneTool.__init__(self, template)
+        self.target = target
         self.raw = raw
 
     @staticmethod
     def add_arguments(parser):
-        parser.add_argument("input_path", type=str, help="input path")
+        OneToOneTool.add_arguments(parser)
         parser.add_argument("target", type=str, help="target speedup (xF) or duration (HH:MM:SS.FFF)")
         parser.add_argument("-r", "--raw", action="store_true", help="lossless (raw bitstream method, for H264)")
 
-    @classmethod
-    def from_args(cls, args):
-        return cls.from_keys(args, ["input_path", "target"], ["raw"])     
-    
-    def run(self):
+    def process(self, input_path: pathlib.Path) -> pathlib.Path:
+        probe_result = utils.ffprobe(input_path)
+        speedup = parse_target(self.target, probe_result)
+        output_path = self.inflate(input_path, {"speedup": f"{speedup:.1f}"})
         if self.raw:
-            with Tool.tempdir() as folder:
-                self.ffmpeg(
-                    "-i", self.input_path,
+            with utils.tempdir() as folder:
+                utils.ffmpeg(
+                    "-i", input_path,
                     "-map", "0:v",
                     "-c:v", "copy",
                     "-bsf:v", "h264_mp4toannexb",
                     folder / "raw.h264"
                 )
-                self.ffmpeg(
+                utils.ffmpeg(
                     "-fflags", "+genpts",
-                    "-r", str(self.probe_result.framerate * self.speedup),
+                    "-r", str(probe_result.framerate * speedup),
                     "-i", folder / "raw.h264",
                     "-c:v", "copy",
-                    self.output_path,
+                    output_path,
                 )
         else:
-            self.ffmpeg(
-                "-i", self.input_path,
+            utils.ffmpeg(
+                "-i", input_path,
                 "-an",
-                "-vf", f"setpts={1/self.speedup}*PTS",
-                self.output_path,
+                "-vf", f"setpts={1/speedup}*PTS",
+                output_path,
             )
-        self.startfile(self.output_path)
+        return output_path

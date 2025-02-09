@@ -1,10 +1,11 @@
 import math
-from pathlib import Path
+import pathlib
 
-from ..tool import Tool
+from ..tool import ManyToOneTool
+from .. import utils
 
 
-class Stack(Tool):
+class Stack(ManyToOneTool):
     """
     @see https://stackoverflow.com/questions/11552565/
     """
@@ -12,11 +13,8 @@ class Stack(Tool):
     NAME = "stack"
     DESC = "Stack videos in a grid"
 
-    def __init__(self, output_path: str, source_paths: str,
-            draw_text: bool = True, shortest: bool = False):
-        Tool.__init__(self)
-        self.output_path = Path(output_path)
-        self.source_paths = self.parse_source_paths(source_paths)
+    def __init__(self, draw_text: bool = True, shortest: bool = False):
+        ManyToOneTool.__init__(self)
         self.draw_text = draw_text
         self.shortest = shortest
         self.font_size = 72
@@ -25,18 +23,13 @@ class Stack(Tool):
 
     @staticmethod
     def add_arguments(parser):
-        parser.add_argument("output_path", type=str, help="output path")
-        parser.add_argument("source_paths", type=str, nargs="+", help="source paths")
+        ManyToOneTool.add_arguments(parser)
         parser.add_argument("-t", "--draw-text", action="store_true", help="write filenames on videos")
         parser.add_argument("-s", "--shortest", action="store_true", help="stop when the shortest input ends")
 
-    @classmethod
-    def from_args(cls, args):
-        return cls.from_keys(args, ["output_path", "source_paths"], ["draw_text", "shortest"])
-
-    def run(self):
-        n = len(self.source_paths)
-        probe = self.probe(self.source_paths[0])
+    def process(self, input_paths: list[pathlib.Path], output_path: pathlib.Path):
+        n = len(input_paths)
+        probe = utils.ffprobe(input_paths[0])
         self.font_size = int(probe.height * 0.15)
         self.text_offset = int(probe.height * 0.21)
         width = math.ceil(math.sqrt(n))
@@ -44,7 +37,7 @@ class Stack(Tool):
         args = []
         filter_args = []
         draw_arg = ""
-        for i, path in enumerate(self.source_paths):
+        for i, path in enumerate(input_paths):
             args += ["-i", path.as_posix()]
             if self.draw_text:
                 filter_args.append(
@@ -79,6 +72,5 @@ class Stack(Tool):
         filter_args.append(draw_arg)
         args += ["-filter_complex", ";".join(filter_args)]
         args += ["-map", "[v]"]
-        args.append(self.output_path)
-        self.ffmpeg(*args)
-        self.startfile(self.output_path)
+        args.append(output_path)
+        utils.ffmpeg(*args)

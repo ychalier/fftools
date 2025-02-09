@@ -1,35 +1,33 @@
-from pathlib import Path
+import math
+import pathlib
 
-from ..tool import Tool, ArgumentError
+from ..tool import OneToOneTool
+from .. import utils
 
 
-class Split(Tool):
+class Split(OneToOneTool):
 
     NAME = "split"
     DESC = "Split a video file into parts of same duration."
+    OUTPUT_PATH_TEMPLATE = "{parent}/{stem}_{i}{suffix}"
 
-    def __init__(self, input_path: str, parts: int | None = None,
-                 duration: str | None = None, output_folder: str | None = None):
-        Tool.__init__(self)
-        self.input_path = Path(input_path)
+    def __init__(self,
+            template: str,
+            parts: int | None = None,
+            duration: str | None = None):
+        OneToOneTool.__init__(self, template)
         self.parts = parts
-        self.duration = None if duration is None else self.parse_duration(duration)
+        self.duration = None if duration is None else utils.parse_duration(duration)
         if self.parts is None and self.duration is None:
-            raise ArgumentError("Parts or duration should be specified")
-        self.output_folder = None if output_folder is None else Path(output_folder)
+            raise ValueError("Parts or duration should be specified")
 
     @staticmethod
     def add_arguments(parser):
-        parser.add_argument("input_path", type=str, help="input path")
+        OneToOneTool.add_arguments(parser)
         parser.add_argument("-p", "--parts", type=int, default=None, help="number of parts to split into")
         parser.add_argument("-d", "--duration", type=str, default=None, help="limit duration")
-        parser.add_argument("-o", "--output-folder", type=str, default=None, help="path to output folder")
 
-    @classmethod
-    def from_args(cls, args):
-        return cls.from_keys(args, ["input_path"], ["parts", "duration", "output_folder"])     
-    
-    def compute_stops(self, duration: float):
+    def _compute_stops(self, duration: float) -> list[float]:
         stops = []
         limit = self.duration if self.parts is None else duration / self.parts
         t = 0
@@ -38,23 +36,16 @@ class Split(Tool):
             t += limit
         return stops
 
-    def process_file(self, input_path: Path):
-        import math
-        probe_result = self.probe(input_path)
-        stops = self.compute_stops(probe_result.duration)
+    def process(self, input_path: pathlib.Path) -> pathlib.Path:
+        probe_result = utils.ffprobe(input_path)
+        stops = self._compute_stops(probe_result.duration)
         padi = max(1, math.ceil(math.log10(len(stops) - 1)))
         for i, (time_start, time_end) in enumerate(zip(stops, stops[1:])):
-            output_path = input_path.with_stem(input_path.stem + f"_{i:0{padi}d}")
-            if self.output_folder is not None:
-                output_path = self.output_folder / output_path.name
-            self.ffmpeg(
+            output_path = self.inflate(input_path, {"i": f"{i:0{padi}d}"})
+            utils.ffmpeg(
                 "-i", input_path,
-                "-ss", self.format_timestamp(time_start),
-                "-to", self.format_timestamp(time_end),
+                "-ss", utils.format_timestamp(time_start),
+                "-to", utils.format_timestamp(time_end),
                 output_path
             )
-
-    def run(self):
-        input_paths = self.parse_source_paths([self.input_path])
-        for input_path in input_paths:
-            self.process_file(input_path)
+        return output_path.parent

@@ -1,54 +1,43 @@
-from pathlib import Path
+import pathlib
 
-from ..tool import Tool
+from ..tool import OneToOneTool
+from .. import utils
 
 
-class Preview(Tool):
+class Preview(OneToOneTool):
 
     NAME = "preview"
     DESC = "Extract thumbnails of evenly spaced moments of a video."
+    OUTPUT_PATH_TEMPLATE = "{parent}/{stem}_preview.png"
 
-    def __init__(self, video_path: str, nrows: int = 3, ncols: int = 2):
-        Tool.__init__(self)
-        self.video_path = Path(video_path)
-        self.image_path = self.video_path.with_suffix(".jpg").with_stem(self.video_path.stem + "_preview")
+    def __init__(self, template: str, nrows: int = 3, ncols: int = 2):
+        OneToOneTool.__init__(self, template)
         self.nrows = nrows
         self.ncols = ncols
 
     @staticmethod
     def add_arguments(parser):
-        parser.add_argument("video_path", type=str, help="Path to the source video")
+        OneToOneTool.add_arguments(parser)
         parser.add_argument("-r", "--nrows", type=int, default=3)
         parser.add_argument("-c", "--ncols", type=int, default=2)
-
-    @classmethod
-    def from_args(cls, args):
-        return cls.from_keys(args, ["video_path"], ["nrows", "ncols"])
     
-    def extract_frames(self, folder: Path):
-        probe = self.probe(self.video_path)
+    def _extract_frames(self, input_path: pathlib.Path, folder: pathlib.Path):
+        probe = utils.ffprobe(input_path)
         npreviews = self.nrows * self.ncols
         frame_count = int(probe.duration * probe.framerate)
         frame_indices = [i * (frame_count // npreviews) for i in range(npreviews)]
-        self.ffmpeg(
-            "-i",
-            self.video_path,
-            "-vf",
-            "select='%s'" % ("+".join([
-                    "eq(n\\,%d)" % i
-                    for i in frame_indices
-                ])
-            ),
-            "-vsync",
-            "0",
-            folder / "%06d.jpg",
+        utils.ffmpeg(
+            "-i", input_path,
+            "-vf", "select='%s'" % ("+".join(["eq(n\\,%d)" % i for i in frame_indices])),
+            "-vsync", "0",
+            folder / "%06d.png",
         )
 
-    def merge_frames(self, folder: Path):
+    def _merge_frames(self, folder: pathlib.Path, output_path: pathlib.Path):
         import PIL.Image
         image = None
         width, height = None, None
-        for i, frame_path in enumerate(sorted(folder.glob("*.jpg"))):
+        for i, frame_path in enumerate(sorted(folder.glob("*.png"))):
             with PIL.Image.open(frame_path, "r") as frame:
                 if image is None:
                     width, height = frame.size
@@ -60,10 +49,11 @@ class Preview(Tool):
                 row = i // self.ncols
                 col = i % self.ncols
                 image.paste(frame, (col * width, row * height))
-        image.save(self.image_path)
+        image.save(output_path)
     
-    def run(self):
-        with Tool.tempdir() as folder:
-            self.extract_frames(folder)
-            self.merge_frames(folder)
-        self.startfile(self.image_path)
+    def process(self, input_path: pathlib.Path) -> pathlib.Path:
+        with utils.tempdir() as folder:
+            self._extract_frames(input_path, folder)
+            ouptut_path = self.inflate(input_path)
+            self._merge_frames(folder, ouptut_path)
+        return ouptut_path
