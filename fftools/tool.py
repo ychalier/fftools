@@ -28,22 +28,28 @@ class OneToOneTool(Tool):
     def __init__(self, template: str | None):
         Tool.__init__(self)
         self.template = template if template is not None else self.OUTPUT_PATH_TEMPLATE
+        self.overwrite = False
     
     @staticmethod
     def add_arguments(parser: argparse.ArgumentParser):
         parser.add_argument("input_path", type=str, help="input path")
         parser.add_argument("output_path", type=str, help="output path", nargs="?")
+        parser.add_argument("-nx", "--no-execute", action="store_true", help="do not open the output file")
+        parser.add_argument("-ow", "--overwrite", action="store_true", help="overwrite existing files")
     
     @classmethod
     def run(cls, args: argparse.Namespace):
         kwargs = vars(args)
         input_path = kwargs.pop("input_path")
         template = kwargs.pop("output_path", None)
+        no_execute = kwargs.pop("no_execute", False)
+        overwrite = kwargs.pop("overwrite", False)
         tool = cls(template, **kwargs)
+        tool.overwrite = overwrite
         expanded_input_paths = utils.expand_paths([input_path])
         for input_path in expanded_input_paths:
             output_path = tool.process(input_path)
-            if len(expanded_input_paths) == 1 and output_path is not None:
+            if len(expanded_input_paths) == 1 and output_path is not None and not no_execute:
                 utils.startfile(output_path)
     
     def inflate(self, input_path: pathlib.Path, context: dict = {}) -> pathlib.Path:
@@ -54,6 +60,9 @@ class OneToOneTool(Tool):
             **context
         })
         path.parent.mkdir(exist_ok=True, parents=True)
+        if self.overwrite:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            return path
         return utils.find_unique_path(path)
     
     def process(self, input_path: pathlib.Path) -> pathlib.Path | None:
