@@ -1,4 +1,4 @@
-from .blend import Blend
+from .blend import BlendImage, BlendVideo
 from .concat import Concat
 from .cut import Cut
 from .merge import Merge
@@ -13,7 +13,8 @@ from .timestamp import Timestamp
 
 
 TOOL_LIST = [
-    Blend,
+    BlendImage,
+    BlendVideo,
     Concat,
     Cut,
     Merge,

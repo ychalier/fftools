@@ -2,6 +2,7 @@ import contextlib
 import dataclasses
 import glob
 import json
+import math
 import os
 import pathlib
 import re
@@ -203,3 +204,87 @@ def startfile(path: pathlib.Path | None) -> None:
 def tempdir() -> typing.Generator[pathlib.Path, typing.Any, None]:
     with tempfile.TemporaryDirectory() as td:
         yield pathlib.Path(td)
+
+
+class VideoInput:
+
+    def __init__(self, path: pathlib.Path):
+        self.path = path
+        import cv2
+        self.capture: cv2.VideoCapture
+        self.width: int 
+        self.height: str
+        self.framerate: str
+
+    def __enter__(self):
+        import cv2
+        self.capture = cv2.VideoCapture(self.path)
+        self.width = int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.height = int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.framerate = self.capture.get(cv2.CAP_PROP_FPS)
+        return self
+    
+    def __iter__(self):
+        return self
+    
+    def __next__(self):
+        import numpy, cv2
+        success, frame = self.capture.read()
+        if not success or frame is None:
+            raise StopIteration
+        return numpy.array(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.capture.release()
+
+
+class VideoOutput:
+
+    VCODEC = "h264"
+
+    def __init__(self, path: pathlib.Path, width: int, height: int, framerate: str):
+        self.path = path
+        self.width = width 
+        self.height = height
+        self.framerate = framerate
+        self.process: subprocess.Popen[bytes]
+    
+    def __enter__(self, ffmpeg="ffmpeg"):
+        self.process = subprocess.Popen([
+            ffmpeg,
+            "-hide_banner",
+            "-loglevel", "error",
+            "-f", "rawvideo",
+            "-stats",
+            "-vcodec","rawvideo",
+            "-s", f"{self.width}x{self.height}",
+            "-pix_fmt", "rgb24",
+            "-r", f"{self.framerate}",
+            "-i", "-",
+            "-r", f"{self.framerate}",
+            "-pix_fmt", "yuv420p",
+            "-an",
+            "-vcodec", self.VCODEC,
+            self.path.as_posix(),
+            "-y"
+        ], stdin=subprocess.PIPE)
+        return self
+    
+    def feed(self, frame):
+        import numpy
+        self.process.stdin.write(frame.astype(numpy.uint8).tobytes())
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.process.stdin.close()
+        self.process.wait()
+
+
+def gauss(n: int, sigma: float, normalized: bool = False) -> list[float]:
+    weights = [
+        1 / (sigma * math.sqrt(2 * math.pi)) * math.exp(-float(x) ** 2 / (2 * sigma **2 ))
+        for x in range(-int(n / 2), int(n / 2) + 1)
+    ][:n]
+    if not normalized:
+        return weights
+    total = sum(weights)
+    return [w/total for w in weights]

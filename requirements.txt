@@ -1,4 +1,5 @@
 numpy
+opencv-python
 Pillow
 tqdm
 python-dateutil
