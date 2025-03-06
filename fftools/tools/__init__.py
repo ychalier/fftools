@@ -1,6 +1,7 @@
 from .blend import BlendImage, BlendVideo
 from .carve import Carve
 from .concat import Concat
+from .convert import Convert
 from .cut import Cut
 from .merge import Merge
 from .preview import Preview
@@ -18,6 +19,7 @@ TOOL_LIST = [
     BlendVideo,
     Carve,
     Concat,
+    Convert,
     Cut,
     Merge,
     Preview,
