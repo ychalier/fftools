@@ -1,5 +1,6 @@
 import pathlib
 import typing
+import warnings
 
 from ..tool import OneToOneTool, ManyToOneTool
 from .. import utils
@@ -141,12 +142,14 @@ class BlendVideo(ManyToOneTool):
             operation: str = "average",
             time_start: str | None = None,
             time_end: str | None = None,
-            duration: str | None = None):
+            duration: str | None = None,
+            framerate: str | None = None):
         ManyToOneTool.__init__(self)
         self.time_start = time_start
         self.time_end = time_end
         self.duration = duration
         self.opname = operation
+        self.framerate = framerate
         self.operation = getop(operation)
     
     @staticmethod
@@ -156,25 +159,24 @@ class BlendVideo(ManyToOneTool):
         parser.add_argument("-ss", "--time-start", type=str, help="Starting timestamp, in FFMPEG format (HH:MM:SS.FFF)", default=None)
         parser.add_argument("-to", "--time-end", type=str, help="Ending timestamp, in FFMPEG format (HH:MM:SS.FFF)", default=None)
         parser.add_argument("-t", "--duration", type=str, help="Duration of the clip to extract, in FFMPEG format (HH:MM:SS.FFF)", default=None)
+        parser.add_argument("-r", "--framerate", type=str, help="Framerate output if all inputs are folders", default=None)
     
     def process(self, input_paths: list[pathlib.Path], output_path: pathlib.Path):
         import numpy, PIL.Image
         
         with utils.tempdir() as temp_root:
-            min_size = None
-            probe = None
-            
-            """
-            TODO: add an extract tool to extract frames from one or multiple videos.
-            Then, make it so that if the input path is a folder, we expect it to contain frames.
-            This way, one may reuse the extracted frames from a previous run.
-            If if it a video, we extract it as before.
-            """
-            
-            # 1. Extract frames of each input video
+            folders: list[pathlib.Path] = []
+            width, height, framerate = None, None, None
+
             for i, input_path in enumerate(input_paths):
-                if probe is None:
+                if input_path.is_dir():
+                    folders.append(input_path)
+                    continue
+                if width is None:
                     probe = utils.ffprobe(input_path)
+                    width = probe.width
+                    height = probe.height
+                    framerate = probe.framerate
                 temp_folder = temp_root / f"{i}"
                 temp_folder.mkdir()
                 cmd = ["-i", input_path.as_posix()]
@@ -187,15 +189,25 @@ class BlendVideo(ManyToOneTool):
                 template = temp_folder / "%09d.png"
                 cmd += [template.as_posix()]
                 utils.ffmpeg(*cmd)
-                size = len(list(temp_folder.glob("*.png")))
-                if min_size is None or size < min_size:
-                    min_size = size
-                        
-            # 2. Build the output video by blending the frames
-            with utils.VideoOutput(output_path, probe.width, probe.height, probe.framerate) as vout:
+                folders.append(temp_folder)
+            if not folders:
+                warnings.warn("No input found")
+                return
+            min_size = min([len(list(folder.glob("*.png"))) for folder in folders])
+            if min_size == 0:
+                warnings.warn("(At least) one input is empty")
+                return
+            if width is None:
+                if self.framerate is None:
+                    raise ValueError("Please provide a framerate")
+                image = PIL.Image.open(folders[0] / f"{1:09d}.png")
+                width = image.width
+                height = image.height
+                framerate = self.framerate
+            with utils.VideoOutput(output_path, width, height, framerate) as vout:
                 for j in range(min_size):
                     frames = []
-                    for i, input_path in enumerate(input_paths):
-                        frame = PIL.Image.open(temp_root / f"{i}" / f"{(j+1):09d}.png")
+                    for folder in folders:
+                        frame = PIL.Image.open(folder / f"{(j+1):09d}.png")
                         frames.append(frame)
                     vout.feed(self.operation(numpy.array(frames)))

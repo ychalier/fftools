@@ -16,7 +16,7 @@ import dateutil.parser
 
 def expand_paths(argstrings: list[str | pathlib.Path]) -> list[pathlib.Path]:
     """Given a list of string (file paths, folder paths, glob patterns), returns
-    a flat list of file paths.
+    a flat list of paths.
     """
     source_paths = []
     for argstring in argstrings:
