@@ -12,8 +12,9 @@ See also:
 
 Tool | Description
 ---- | -----------
+BlendF | Blend frames of a video
 BlendI | Extract frames from a video and merge them into a single photo
-BlendV | Blend frames of a video
+BlendV | Blend multiple videos into one
 Carve | Resize an image using [seam carving](https://en.m.wikipedia.org/wiki/Seam_carving) (adapted from [andrewcampbell/seam-carving](https://github.com/andrewdcampbell/seam-carving), GPL3)
 Concat | Concatenate several videos into one
 Cut | Cut an image or a video into parts of given width/height

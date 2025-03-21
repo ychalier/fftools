@@ -1,7 +1,7 @@
 import pathlib
 import typing
 
-from ..tool import OneToOneTool
+from ..tool import OneToOneTool, ManyToOneTool
 from .. import utils
 
 
@@ -91,9 +91,9 @@ class BlendImage(OneToOneTool):
         return output_path
 
 
-class BlendVideo(OneToOneTool):
+class BlendFrame(OneToOneTool):
 
-    NAME = "blendv"
+    NAME = "blendf"
     DESC = "Blend consecutive frames of a video into another video."
     OUTPUT_PATH_TEMPLATE = "{parent}/{stem}_{opname}{suffix}"
 
@@ -130,3 +130,72 @@ class BlendVideo(OneToOneTool):
                     frames.pop(0)
                     vout.feed(self.operation(numpy.array(frames)))
         return output_path
+
+
+class BlendVideo(ManyToOneTool):
+    
+    NAME = "blendv"
+    DESC = "Blend multiple videos into one"
+    
+    def __init__(self,
+            operation: str = "average",
+            time_start: str | None = None,
+            time_end: str | None = None,
+            duration: str | None = None):
+        ManyToOneTool.__init__(self)
+        self.time_start = time_start
+        self.time_end = time_end
+        self.duration = duration
+        self.opname = operation
+        self.operation = getop(operation)
+    
+    @staticmethod
+    def add_arguments(parser):
+        ManyToOneTool.add_arguments(parser)
+        parser.add_argument("-op", "--operation", type=str, help="Operation to blend the images together", default="average", choices=["average", "brighter", "darker", "sum", "difference"])
+        parser.add_argument("-ss", "--time-start", type=str, help="Starting timestamp, in FFMPEG format (HH:MM:SS.FFF)", default=None)
+        parser.add_argument("-to", "--time-end", type=str, help="Ending timestamp, in FFMPEG format (HH:MM:SS.FFF)", default=None)
+        parser.add_argument("-t", "--duration", type=str, help="Duration of the clip to extract, in FFMPEG format (HH:MM:SS.FFF)", default=None)
+    
+    def process(self, input_paths: list[pathlib.Path], output_path: pathlib.Path):
+        import numpy, PIL.Image
+        
+        with utils.tempdir() as temp_root:
+            min_size = None
+            probe = None
+            
+            """
+            TODO: add an extract tool to extract frames from one or multiple videos.
+            Then, make it so that if the input path is a folder, we expect it to contain frames.
+            This way, one may reuse the extracted frames from a previous run.
+            If if it a video, we extract it as before.
+            """
+            
+            # 1. Extract frames of each input video
+            for i, input_path in enumerate(input_paths):
+                if probe is None:
+                    probe = utils.ffprobe(input_path)
+                temp_folder = temp_root / f"{i}"
+                temp_folder.mkdir()
+                cmd = ["-i", input_path.as_posix()]
+                if self.time_start is not None:
+                    cmd += ["-ss", self.time_start]
+                if self.time_end is not None:
+                    cmd += ["-to", self.time_end]
+                if self.duration is not None:
+                    cmd += ["-t", self.duration]
+                template = temp_folder / "%09d.png"
+                cmd += [template.as_posix()]
+                utils.ffmpeg(*cmd)
+                size = len(list(temp_folder.glob("*.png")))
+                if min_size is None or size < min_size:
+                    min_size = size
+                        
+            # 2. Build the output video by blending the frames
+            with utils.VideoOutput(output_path, probe.width, probe.height, probe.framerate) as vout:
+                for j in range(min_size):
+                    frames = []
+                    for i, input_path in enumerate(input_paths):
+                        frame = PIL.Image.open(temp_root / f"{i}" / f"{(j+1):09d}.png")
+                        frames.append(frame)
+                    vout.feed(self.operation(numpy.array(frames)))

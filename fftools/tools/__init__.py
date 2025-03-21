@@ -1,4 +1,4 @@
-from .blend import BlendImage, BlendVideo
+from .blend import BlendImage, BlendFrame, BlendVideo
 from .carve import Carve
 from .concat import Concat
 from .convert import Convert
@@ -15,6 +15,7 @@ from .timestamp import Timestamp
 
 
 TOOL_LIST = [
+    BlendFrame,
     BlendImage,
     BlendVideo,
     Carve,
