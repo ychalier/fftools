@@ -1,5 +1,6 @@
 import argparse
 import pathlib
+import time
 
 from . import utils
 
@@ -36,6 +37,7 @@ class OneToOneTool(Tool):
         parser.add_argument("output_path", type=str, help="output path", nargs="?")
         parser.add_argument("-nx", "--no-execute", action="store_true", help="do not open the output file")
         parser.add_argument("-ow", "--overwrite", action="store_true", help="overwrite existing files")
+        parser.add_argument("-gp", "--global-progress", action="store_true", help="show global progress if multiple inputs are provided")
     
     @classmethod
     def run(cls, args: argparse.Namespace):
@@ -44,10 +46,21 @@ class OneToOneTool(Tool):
         template = kwargs.pop("output_path", None)
         no_execute = kwargs.pop("no_execute", False)
         overwrite = kwargs.pop("overwrite", False)
+        global_progress = kwargs.pop("global_progress", False)
         tool = cls(template, **kwargs)
         tool.overwrite = overwrite
         expanded_input_paths = utils.expand_paths([input_path])
-        for input_path in expanded_input_paths:
+        n = len(expanded_input_paths)
+        time_start = time.time()
+        for i, input_path in enumerate(expanded_input_paths):
+            if n > 1 and global_progress:
+                elapsed = time.time() - time_start
+                if i >= 1:
+                    speed = elapsed / i
+                    eta = speed * (n - i)
+                    print(f"[{i+1}/{n}] speed={speed:.1f}s/it eta={utils.format_eta(eta)} input={input_path.as_posix()}")
+                else:
+                    print(f"[{i+1}/{n}] {input_path.as_posix()}")
             output_path = tool.process(input_path)
             if len(expanded_input_paths) == 1 and output_path is not None and not no_execute:
                 utils.startfile(output_path)

@@ -31,7 +31,7 @@ def expand_paths(argstrings: list[str | pathlib.Path]) -> list[pathlib.Path]:
             source_paths += glob.glob(str(argstring))
         else:
             raise ValueError(f"Invalid argument type {type(argstring)}")
-    return [pathlib.Path(path) for path in source_paths]
+    return sorted([pathlib.Path(path) for path in source_paths])
 
 
 def ffmpeg(*args: str,
@@ -135,6 +135,13 @@ def format_timestamp(total_seconds: float) -> str:
     s = int((total_seconds - 3600 * h - 60 * m))
     ms = round((total_seconds - 3600 * h - 60 * m - s) * 1000)
     return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
+
+
+def format_eta(total_seconds: float) -> str:
+    h = int(total_seconds / 3600)
+    m = int((total_seconds - 3600 * h) / 60)
+    s = int((total_seconds - 3600 * h - 60 * m))
+    return f"{h:02d}:{m:02d}:{s:02d}"
 
 
 def parse_aspect_ratio(string: str | None) -> float | None:
