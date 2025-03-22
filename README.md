@@ -12,6 +12,7 @@ See also:
 
 Tool | Description
 ---- | -----------
+Batch | FFmpeg wrapper for apply commands in batches
 BlendF | Blend frames of a video
 BlendI | Extract frames from a video and merge them into a single photo
 BlendV | Blend multiple videos into one
