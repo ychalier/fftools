@@ -119,7 +119,7 @@ def find_unique_path(base_path: pathlib.Path) -> pathlib.Path:
 
 
 def escape_path_chars(string: str) -> str:
-    return re.sub(r"[\*\"/\\<>:\|]", "", string)
+    return re.sub(r"[\*\"\\<>:\|]", "", string)
 
 
 def format_path(template: str, kwargs: dict) -> pathlib.Path:
