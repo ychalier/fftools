@@ -13,27 +13,41 @@ class Stack(ManyToOneTool):
     NAME = "stack"
     DESC = "Stack videos in a grid"
 
-    def __init__(self, draw_text: bool = True, shortest: bool = False):
+    def __init__(self, draw_text: bool = True, shortest: bool = False, rows: int | None = None, columns: int | None = None):
         ManyToOneTool.__init__(self)
         self.draw_text = draw_text
         self.shortest = shortest
         self.font_size = 72
         self.text_offset = 100
         self.font_file = "c\\:\\\\Windows\\\\Fonts\\\\arialbd.ttf"
+        self.rows = rows
+        self.columns = columns
 
     @staticmethod
     def add_arguments(parser):
         ManyToOneTool.add_arguments(parser)
         parser.add_argument("-t", "--draw-text", action="store_true", help="write filenames on videos")
         parser.add_argument("-s", "--shortest", action="store_true", help="stop when the shortest input ends")
+        parser.add_argument("-r", "--rows", type=int, default=None, help="force number of rows")
+        parser.add_argument("-c", "--columns", type=int, default=None, help="force number of columns")
 
     def process(self, input_paths: list[pathlib.Path], output_path: pathlib.Path):
         n = len(input_paths)
         probe = utils.ffprobe(input_paths[0])
         self.font_size = int(probe.height * 0.15)
         self.text_offset = int(probe.height * 0.21)
-        width = math.ceil(math.sqrt(n))
-        height = math.ceil(n / width)
+        if self.rows is not None and self.columns is not None:
+            width = self.columns
+            height = self.rows
+        elif self.rows is not None:
+            height = self.rows
+            width = math.ceil(n / height)
+        elif self.columns is not None:
+            width = self.columns
+            height = math.ceil(n / width)
+        else:
+            width = math.ceil(math.sqrt(n))
+            height = math.ceil(n / width)
         args = []
         filter_args = []
         draw_arg = ""
