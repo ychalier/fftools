@@ -6,6 +6,7 @@ from .convert import Convert
 from .cut import Cut
 from .extract import Extract
 from .merge import Merge
+from .modulate import Modulate
 from .preview import Preview
 from .probe import Probe
 from .resize import Resize
@@ -27,6 +28,7 @@ TOOL_LIST = [
     Cut,
     Extract,
     Merge,
+    Modulate,
     Preview,
     Probe,
     Resize,
