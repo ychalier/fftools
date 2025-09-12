@@ -13,10 +13,12 @@ class BlendFrames(OneToOneTool):
     def __init__(self,
             template: str,
             operation: str = "average",
-            size: int = 3):
+            size: int = 3,
+            fixed: bool = False):
         OneToOneTool.__init__(self, template)
         self.size = size
         self.opname = operation
+        self.fixed = fixed
         self.operation = utils.getop(operation)
 
     @staticmethod
@@ -24,6 +26,7 @@ class BlendFrames(OneToOneTool):
         OneToOneTool.add_arguments(parser)
         parser.add_argument("-p", "--operation", type=str, help="Operation to blend the images together", default="average", choices=["average", "brighter", "darker", "sum", "difference", "weight1", "weight3", "weight5", "weight10", "random"])
         parser.add_argument("-s", "--size", type=int, help="Moving-window size (in frames) for blending", default=3)
+        parser.add_argument("-f", "--fixed", action="store_true", help="Use fixed window instead of a rolling window")
 
     def process(self, input_path: pathlib.Path) -> pathlib.Path:
         import numpy
@@ -32,14 +35,32 @@ class BlendFrames(OneToOneTool):
             "size": self.size
         })
         with utils.VideoInput(input_path) as vin:
-            with utils.VideoOutput(output_path, vin.width, vin.height, vin.framerate, vin.length + self.size - 1) as vout:
-                frames = []
-                for frame in vin:
-                    frames.append(frame)
-                    while len(frames) > self.size:
+            length = vin.length
+            if not self.fixed:
+                length += self.size - 1
+            with utils.VideoOutput(output_path, vin.width, vin.height, vin.framerate, length) as vout:
+                if self.fixed:
+                    running = True
+                    while running:
+                        frames = []
+                        try:
+                            for _ in range(self.size):
+                                frames.append(next(vin))
+                        except StopIteration:
+                            running = False
+                            if not frames:
+                                continue
+                        out_frame = self.operation(numpy.array(frames))
+                        for _ in frames:
+                            vout.feed(out_frame)
+                else:
+                    frames = []
+                    for frame in vin:
+                        frames.append(frame)
+                        while len(frames) > self.size:
+                            frames.pop(0)
+                        vout.feed(self.operation(numpy.array(frames)))
+                    while len(frames) > 1:
                         frames.pop(0)
-                    vout.feed(self.operation(numpy.array(frames)))
-                while len(frames) > 1:
-                    frames.pop(0)
-                    vout.feed(self.operation(numpy.array(frames)))
+                        vout.feed(self.operation(numpy.array(frames)))
         return output_path
