@@ -9,6 +9,8 @@ def parse_target(target: str, probe: utils.FFProbeResult):
     if re.match(r"^x(\d+)(\.\d+)?$", target.strip()):
         return float(target.strip()[1:])
     duration = utils.parse_duration(target)
+    if probe.duration is None:
+        raise ValueError("Video has no duration")
     return probe.duration / duration
 
 

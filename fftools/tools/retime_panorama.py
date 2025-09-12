@@ -49,19 +49,34 @@ def estimate_motion(
     dx = numpy.zeros(vin.length - 1, dtype=numpy.float32)
     dy = numpy.zeros(vin.length - 1, dtype=numpy.float32)
     valid = numpy.zeros(vin.length - 1, dtype=numpy.bool_)
-    feature_params = dict(maxCorners=max_corners, qualityLevel=quality_level, minDistance=min_distance, blockSize=3)
-    lk_params = dict(winSize=win_size, maxLevel=max_level, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01))
     for i in range(1, vin.length):
         try:
             curr = next(vin)
         except StopIteration:
             break
         curr_gray = cv2.cvtColor(curr, cv2.COLOR_RGB2GRAY)
-        p0 = cv2.goodFeaturesToTrack(prev_gray, mask=None, **feature_params)
+        p0 = cv2.goodFeaturesToTrack(
+            prev_gray,
+            mask=None,
+            maxCorners=max_corners,
+            qualityLevel=quality_level,
+            minDistance=min_distance,
+            blockSize=3)
         if p0 is None or len(p0) < 10:
             prev_gray = curr_gray
             continue
-        p1, st, err = cv2.calcOpticalFlowPyrLK(prev_gray, curr_gray, p0, None, **lk_params)
+        p1 = p0.copy()
+        p1, st, err = cv2.calcOpticalFlowPyrLK(
+            prev_gray,
+            curr_gray,
+            p0,
+            p1,
+            None,
+            None,
+            winSize=win_size,
+            maxLevel=max_level,
+            criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01)
+        )
         if p1 is None:
             prev_gray = curr_gray
             continue

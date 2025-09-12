@@ -1,3 +1,4 @@
+from ..tool import Tool
 from .batch import Batch
 from .blend import BlendImage, BlendFrame, BlendVideo
 from .carve import Carve
@@ -18,7 +19,7 @@ from .stack import Stack
 from .timestamp import Timestamp
 
 
-TOOL_LIST = [
+TOOL_LIST: list[type[Tool]] = [
     Batch,
     BlendFrame,
     BlendImage,

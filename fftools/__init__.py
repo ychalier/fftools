@@ -23,16 +23,22 @@ def main():
         description=__doc__)
     subparsers = parser.add_subparsers(dest="tool", required=True)
     for cls in TOOL_LIST:
+        if cls.NAME is None:
+            raise ValueError(f"Class {cls} does not have a valid name")
         subparser = subparsers.add_parser(
             cls.NAME, 
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
             description=cls.DESC)
         cls.add_arguments(subparser)
     args = parser.parse_args()
+    tool_cls = None
     for cls in TOOL_LIST:
         if args.tool == cls.NAME:
             tool_cls = cls
-    del args.tool
+            break
+    if tool_cls is None:
+        raise ValueError(f"Could not find tool class for tool '{args.tool}'")
+    delattr(args, "tool")
     try:
         tool_cls.run(args)
     except KeyboardInterrupt:
@@ -40,4 +46,3 @@ def main():
     except Exception as err:
         print(FAIL + f"Error: {err}" + ENDC)
         traceback.print_exc()
-

@@ -23,8 +23,8 @@ class Batch(OneToOneTool):
     def process(self, input_path: pathlib.Path) -> pathlib.Path:
         output_path = self.inflate(input_path)
         utils.ffmpeg(
-            "-i", input_path.as_posix(),
+            "-i", input_path,
             *self.args,
-            output_path.as_posix()
+            output_path
         )
         return output_path

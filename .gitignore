@@ -22,3 +22,5 @@ dist/
 # Audio files
 *.mp3
 *.wav
+
+.vscode

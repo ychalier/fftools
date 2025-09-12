@@ -22,8 +22,8 @@ RESIZE_FILTERS = [
 
 @dataclasses.dataclass
 class ResizeParameters:
-    width: int
-    height: int
+    width: int | None
+    height: int | None
     scale: float
     aspect_ratio: float | None
     fit: str
@@ -128,26 +128,31 @@ class Resize(OneToOneTool):
                     params.width = probe_result.width
                 else:
                     params.height = probe_result.height
-        if params.width is not None and params.height is None:
-            params.height = params.width / params.aspect_ratio
-        if params.width is None and params.height is not None:
-            params.width = params.height * params.aspect_ratio
-        params.width = round(params.width * params.scale)
-        params.height = round(params.height * params.scale)
+        if params.width is not None and params.height is not None:
+            params.width = round(params.width * params.scale)
+            params.height = round(params.height * params.scale)
+        elif params.width is not None and params.height is None:
+            params.height = round(params.width / params.aspect_ratio * params.scale)
+            params.width = round(params.width * params.scale)
+        elif params.width is None and params.height is not None:
+            params.width = round(params.height * params.aspect_ratio * params.scale)
+            params.height = round(params.height * params.scale)
+        else:
+            raise ValueError("Could not determine resizing width or height")
         params.crop_width = probe_result.width
         params.crop_height = probe_result.height
         if params.fit == "cover":
             if params.aspect_ratio > base_aspect_ratio:
-                params.crop_height = probe_result.width / params.aspect_ratio
+                params.crop_height = round(probe_result.width / params.aspect_ratio)
             elif params.aspect_ratio < base_aspect_ratio:
-                params.crop_width = probe_result.height * params.aspect_ratio
+                params.crop_width = round(probe_result.height * params.aspect_ratio)
         params.pad_width = probe_result.width
         params.pad_height = probe_result.height
         if params.fit == "contain":
             if params.aspect_ratio < base_aspect_ratio:
-                params.pad_height = probe_result.width / params.aspect_ratio
+                params.pad_height = round(probe_result.width / params.aspect_ratio)
             elif params.aspect_ratio > base_aspect_ratio:
-                params.pad_width = probe_result.height * params.aspect_ratio
+                params.pad_width = round(probe_result.height * params.aspect_ratio)
         return params
 
     def process(self, input_path: pathlib.Path) -> pathlib.Path:

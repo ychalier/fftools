@@ -18,7 +18,7 @@ class Timestamp(OneToOneTool):
             font_size: int = 36,
             font_path: str = "C:\\Windows\\Fonts\\courbd.ttf",
             padding: int = 16,
-            color: tuple[int] = (255, 255, 255, 255)):
+            color: tuple[int, int, int, int] = (255, 255, 255, 255)):
         OneToOneTool.__init__(self, template)
         self.timestamp = timestamp
         self.font_size = font_size
@@ -35,7 +35,7 @@ class Timestamp(OneToOneTool):
         parser.add_argument("-fs", "--font-size", type=int, help="font size", default=36)
         parser.add_argument("-ff", "--font-path", type=str, help="font size", default="C:\\Windows\\Fonts\\courbd.ttf")
         parser.add_argument("-p", "--padding", type=int, help="padding", default=16)
-    
+
     def process(self, input_path: pathlib.Path) -> pathlib.Path:
         import PIL.Image, tqdm
         with utils.tempdir() as tempdir:
@@ -45,6 +45,8 @@ class Timestamp(OneToOneTool):
                 start = probe.creation
                 if self.timestamp is not None:
                     start = self.timestamp
+                if probe.duration is None:
+                    raise ValueError("Video has no duration")
                 for t in tqdm.tqdm(range(start, start + math.ceil(probe.duration))):
                     d = datetime.datetime.fromtimestamp(t)
                     text = d.strftime("%Y-%m-%d %H:%M:%S")

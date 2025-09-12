@@ -34,7 +34,7 @@ def expand_paths(argstrings: list[str | pathlib.Path]) -> list[pathlib.Path]:
     return sorted([pathlib.Path(path) for path in source_paths])
 
 
-def ffmpeg(*args: str,
+def ffmpeg(*args: str | pathlib.Path,
         loglevel: str = "error",
         show_stats: bool = True,
         ffmpeg: str = "ffmpeg",
@@ -48,7 +48,10 @@ def ffmpeg(*args: str,
     ]
     if show_stats:
         cmd.append("-stats")
-    cmd += args
+    cmd += [
+        arg.as_posix() if isinstance(arg, pathlib.Path) else arg
+        for arg in args
+    ]
     if overwrite:
         cmd.append("-y")
     process = subprocess.Popen(cmd)
@@ -61,7 +64,7 @@ class FFProbeResult:
     width: int
     height: int
     framerate: float
-    duration: float
+    duration: float | None
     size: int
     creation: int
 
@@ -81,6 +84,8 @@ def ffprobe(path: pathlib.Path, ffprobe="ffprobe") -> FFProbeResult:
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE)
+    if result.stdout is None:
+        raise RuntimeError("Could not open FFprobe stdout")
     stdout = result.stdout.read()
     data = json.loads(stdout)
     width = None
@@ -103,6 +108,12 @@ def ffprobe(path: pathlib.Path, ffprobe="ffprobe") -> FFProbeResult:
         creation = int(dateutil.parser.parse(ct).timestamp())
     else:
         creation = int(os.path.getctime(path))
+    if width is None:
+        raise ValueError("Could not read 'width' attribute with FFprobe")
+    if height is None:
+        raise ValueError("Could not read 'height' attribute with FFprobe")
+    if framerate is None:
+        raise ValueError("Could not read 'framerate' attribute with FFprobe")
     return FFProbeResult(width, height, framerate, duration, size, creation)
 
 
@@ -181,6 +192,8 @@ def parse_fraction_duration(duration_string: str) -> str:
 
 def parse_duration(string: str) -> float:
     m = re.match(r"^(\d+:)?(\d+:)?(\d+)(\.\d+)?$", string)
+    if m is None:
+        raise ValueError(f"String '{string}' is not a valid duration string")
     seconds = int(m.group(3))
     if m.group(2) is not None:
         seconds += 3600 * int(m.group(1)[:-1]) + 60 * int(m.group(2)[:-1])
@@ -219,7 +232,7 @@ class VideoInput:
         self.path = path
         import cv2
         self.capture: cv2.VideoCapture
-        self.width: int 
+        self.width: int
         self.height: int
         self.framerate: float
         self.length: int
@@ -232,26 +245,26 @@ class VideoInput:
         self.framerate = self.capture.get(cv2.CAP_PROP_FPS) or 30.0
         self.length = int(self.capture.get(cv2.CAP_PROP_FRAME_COUNT))
         return self
-    
+
     def __iter__(self):
         return self
-    
+
     def __next__(self):
         import numpy, cv2
         success, frame = self.capture.read()
         if not success or frame is None:
             raise StopIteration
         return numpy.array(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-    
+
     def at(self, i: int):
         import cv2
         self.capture.set(cv2.CAP_PROP_POS_FRAMES, i)
         return next(self)
-    
+
     def rewind(self):
         import cv2
         self.capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.capture.release()
 
@@ -262,11 +275,11 @@ class VideoOutput:
 
     def __init__(self, path: pathlib.Path, width: int, height: int, framerate: float):
         self.path = path
-        self.width = width 
+        self.width = width
         self.height = height
         self.framerate = framerate
         self.process: subprocess.Popen[bytes]
-    
+
     def __enter__(self, ffmpeg="ffmpeg"):
         self.process = subprocess.Popen([
             ffmpeg,
@@ -287,13 +300,15 @@ class VideoOutput:
             "-y"
         ], stdin=subprocess.PIPE)
         return self
-    
+
     def feed(self, frame):
         import numpy
+        assert self.process.stdin is not None
         self.process.stdin.write(frame.astype(numpy.uint8).tobytes())
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.process.stdin.close()
+        if self.process.stdin is not None:
+            self.process.stdin.close()
         self.process.wait()
 
 

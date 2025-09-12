@@ -24,6 +24,8 @@ class Preview(OneToOneTool):
     def _extract_frames(self, input_path: pathlib.Path, folder: pathlib.Path):
         probe = utils.ffprobe(input_path)
         npreviews = self.nrows * self.ncols
+        if probe.duration is None:
+            raise ValueError("Input video has no duration")
         frame_count = int(probe.duration * probe.framerate)
         frame_indices = [i * (frame_count // npreviews) for i in range(npreviews)]
         utils.ffmpeg(
@@ -39,7 +41,7 @@ class Preview(OneToOneTool):
         width, height = None, None
         for i, frame_path in enumerate(sorted(folder.glob("*.png"))):
             with PIL.Image.open(frame_path, "r") as frame:
-                if image is None:
+                if image is None or width is None or height is None:
                     width, height = frame.size
                     image = PIL.Image.new(
                         "RGB",
@@ -49,6 +51,7 @@ class Preview(OneToOneTool):
                 row = i // self.ncols
                 col = i % self.ncols
                 image.paste(frame, (col * width, row * height))
+        assert image is not None
         image.save(output_path)
     
     def process(self, input_path: pathlib.Path) -> pathlib.Path:

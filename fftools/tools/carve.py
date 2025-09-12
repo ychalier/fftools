@@ -19,8 +19,8 @@ class Carve(OneToOneTool):
 
     def __init__(self,
             template: str,
-            width: int = None,
-            height: int = None):
+            width: int,
+            height: int):
         OneToOneTool.__init__(self, template)
         self.width = width
         self.height = height
@@ -194,7 +194,7 @@ def seam_carve(
             pbar.update(1)
         return im
 
-    im = cv2.imread(input_path).astype(numpy.float64)
+    im = cv2.imread(input_path.as_posix()).astype(numpy.float64)
     h, w = im.shape[:2]
     assert h + dy > 0 and w + dx > 0 and dy <= h and dx <= w
     output = im
@@ -221,4 +221,4 @@ def seam_carve(
         output = seams_insertion(output, dy, pbar)
         output = rotate_image(output, False)
     pbar.close()
-    cv2.imwrite(output_path, output.astype(numpy.uint8))
+    cv2.imwrite(output_path.as_posix(), output.astype(numpy.uint8))

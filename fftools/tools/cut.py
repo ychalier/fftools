@@ -4,6 +4,7 @@ import pathlib
 from ..tool import OneToOneTool
 from .. import utils
 
+
 class Cut(OneToOneTool):
 
     NAME = "cut"
@@ -32,8 +33,11 @@ class Cut(OneToOneTool):
         height = probe_result.height if self.max_height is None else self.max_height
         rows = math.ceil(probe_result.height / height)
         cols = math.ceil(probe_result.width / width)
+        if rows == 0 or cols == 0:
+            raise ValueError(f"Output will be empty: rows: {rows}, cols: {cols}")
         padi = max(1, math.ceil(math.log10(rows)))
         padj = max(1, math.ceil(math.log10(cols)))
+        output_path = None
         for i in range(rows):
             for j in range(cols):
                 output_path = self.inflate(input_path, {
@@ -47,4 +51,5 @@ class Cut(OneToOneTool):
                     f"crop={width}:{height}:{j * width}:{i * height}",
                     output_path
                 )
+        assert output_path is not None
         return output_path.parent

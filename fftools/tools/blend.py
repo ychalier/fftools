@@ -76,7 +76,7 @@ class BlendImage(OneToOneTool):
 
     def _extract_frames(self, input_path: pathlib.Path, folder: pathlib.Path):
         utils.ffmpeg(
-            "-i", input_path.as_posix(),
+            "-i", input_path,
             "-ss", self.start,
             "-t", self.duration,
             folder / "%06d.png",
@@ -154,7 +154,7 @@ class BlendVideo(ManyToOneTool):
             time_start: str | None = None,
             time_end: str | None = None,
             duration: str | None = None,
-            framerate: str | None = None,
+            framerate: float | None = None,
             offline: bool = False):
         ManyToOneTool.__init__(self)
         self.time_start = time_start
@@ -172,7 +172,7 @@ class BlendVideo(ManyToOneTool):
         parser.add_argument("-ss", "--time-start", type=str, help="Starting timestamp, in FFMPEG format (HH:MM:SS.FFF)", default=None)
         parser.add_argument("-to", "--time-end", type=str, help="Ending timestamp, in FFMPEG format (HH:MM:SS.FFF)", default=None)
         parser.add_argument("-t", "--duration", type=str, help="Duration of the clip to extract, in FFMPEG format (HH:MM:SS.FFF)", default=None)
-        parser.add_argument("-r", "--framerate", type=str, help="Framerate output if all inputs are folders", default=None)
+        parser.add_argument("-r", "--framerate", type=float, help="Framerate output (used if all inputs are folders)", default=None)
         parser.add_argument("--offline", action="store_true", help="Use offline frame extraction (as files), which is slower but less RAM intensive")
 
     def _process_online(self, input_paths: list[pathlib.Path], output_path: pathlib.Path):
@@ -214,7 +214,7 @@ class BlendVideo(ManyToOneTool):
                     framerate = probe.framerate
                 temp_folder = temp_root / f"{i}"
                 temp_folder.mkdir()
-                cmd = ["-i", input_path.as_posix()]
+                cmd = ["-i", input_path]
                 if self.time_start is not None:
                     cmd += ["-ss", self.time_start]
                 if self.time_end is not None:
@@ -222,7 +222,7 @@ class BlendVideo(ManyToOneTool):
                 if self.duration is not None:
                     cmd += ["-t", self.duration]
                 template = temp_folder / "%09d.png"
-                cmd += [template.as_posix()]
+                cmd += [template]
                 utils.ffmpeg(*cmd)
                 folders.append(temp_folder)
             if not folders:
@@ -239,6 +239,8 @@ class BlendVideo(ManyToOneTool):
                 width = image.width
                 height = image.height
                 framerate = self.framerate
+            if height is None or framerate is None:
+                raise ValueError("Some video output parameters are not defined")
             with utils.VideoOutput(output_path, width, height, framerate) as vout:
                 for j in range(min_size):
                     frames = []

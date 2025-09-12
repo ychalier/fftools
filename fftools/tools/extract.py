@@ -1,6 +1,6 @@
 import pathlib
 
-from ..tool import OneToOneTool, ManyToOneTool
+from ..tool import OneToOneTool
 from .. import utils
 
 
