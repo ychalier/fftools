@@ -5,6 +5,7 @@ import numpy
 import tqdm
 
 from ..tool import OneToOneTool
+from .. import utils
 
 
 def filter_random(fft: numpy.ndarray, alpha: float):
@@ -49,24 +50,12 @@ def filter_frame(frame: cv2.Mat | numpy.ndarray, method: str, alpha: float) -> n
     return numpy.round(numpy.abs(numpy.fft.ifft2(fft))).astype(numpy.uint8)
 
 
-def module_video(input_path: pathlib.Path, output_path: pathlib.Path, method: str, alpha: float):
-    capture = cv2.VideoCapture(input_path.as_posix())
-    width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fourcc = int(capture.get(cv2.CAP_PROP_FOURCC))
-    fps = capture.get(cv2.CAP_PROP_FPS)
-    output = cv2.VideoWriter(output_path.as_posix(), fourcc, fps, (width, height), False)
-    pbar = tqdm.tqdm(unit="frame", total=int(capture.get(cv2.CAP_PROP_FRAME_COUNT)))
-    while True:
-        success, frame = capture.read()
-        if not success or frame is None:
-            break
-        out = filter_frame(frame, method, alpha)
-        output.write(out)
-        pbar.update(1)
-    capture.release()
-    output.release()
-    pbar.close()
+def modulate_video(input_path: pathlib.Path, output_path: pathlib.Path, method: str, alpha: float):
+    with utils.VideoInput(input_path) as vin:
+        with utils.VideoOutput(output_path, vin.width, vin.height, vin.framerate, vin.length) as vout:
+            for frame_in in vin:
+                frame_out = filter_frame(frame_in, method, alpha)
+                vout.feed(cv2.cvtColor(frame_out, cv2.COLOR_GRAY2RGB))
 
 
 def modulate_image(input_path: pathlib.Path, output_path: pathlib.Path, method: str, alpha: float):
@@ -103,5 +92,5 @@ class Modulate(OneToOneTool):
         if input_path.suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp", ".avif"]:
             modulate_image(input_path, output_path, self.method, self.alpha)
         else:
-            module_video(input_path, output_path, self.method, self.alpha)
+            modulate_video(input_path, output_path, self.method, self.alpha)
         return output_path
