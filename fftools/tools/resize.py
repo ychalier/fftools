@@ -139,6 +139,8 @@ class Resize(OneToOneTool):
             params.height = round(params.height * params.scale)
         else:
             raise ValueError("Could not determine resizing width or height")
+        params.width = 2 * int(params.width / 2)
+        params.height = 2 * int(params.height / 2)
         params.crop_width = probe_result.width
         params.crop_height = probe_result.height
         if params.fit == "cover":
