@@ -25,10 +25,13 @@ def main():
     for cls in TOOL_LIST:
         if cls.NAME is None:
             raise ValueError(f"Class {cls} does not have a valid name")
+        description = cls.DESC
+        if hasattr(cls, "OUTPUT_PATH_TEMPLATE"):
+            description += " Default output template: " + getattr(cls, "OUTPUT_PATH_TEMPLATE")
         subparser = subparsers.add_parser(
             cls.NAME, 
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            description=cls.DESC)
+            description=description)
         cls.add_arguments(subparser)
     args = parser.parse_args()
     tool_cls = None
