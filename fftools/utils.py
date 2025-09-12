@@ -12,6 +12,7 @@ import tempfile
 import typing
 
 import dateutil.parser
+import tqdm
 
 
 def expand_paths(argstrings: list[str | pathlib.Path]) -> list[pathlib.Path]:
@@ -273,20 +274,25 @@ class VideoOutput:
 
     VCODEC = "h264"
 
-    def __init__(self, path: pathlib.Path, width: int, height: int, framerate: float):
+    def __init__(self, path: pathlib.Path, width: int, height: int, framerate: float, length: int | None = None):
         self.path = path
         self.width = width
         self.height = height
         self.framerate = framerate
+        self.length = length
         self.process: subprocess.Popen[bytes]
+        self.pbar = None
 
     def __enter__(self, ffmpeg="ffmpeg"):
-        self.process = subprocess.Popen([
-            ffmpeg,
+        cmd = [ffmpeg,
             "-hide_banner",
             "-loglevel", "error",
-            "-f", "rawvideo",
-            "-stats",
+            "-f", "rawvideo"]
+        if self.length is None:
+            cmd.append("-stats")
+        else:
+            self.pbar = tqdm.tqdm(total=self.length, unit="frame")
+        cmd += [
             "-vcodec","rawvideo",
             "-s", f"{self.width}x{self.height}",
             "-pix_fmt", "rgb24",
@@ -298,17 +304,23 @@ class VideoOutput:
             "-vcodec", self.VCODEC,
             self.path.as_posix(),
             "-y"
-        ], stdin=subprocess.PIPE)
+        ]
+        self.process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         return self
 
     def feed(self, frame):
         import numpy
         assert self.process.stdin is not None
         self.process.stdin.write(frame.astype(numpy.uint8).tobytes())
+        if self.pbar is not None:
+            self.pbar.update(1)
+            self.pbar.set_postfix({"time": format_timestamp(self.pbar.n / self.framerate)}, refresh=False)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.process.stdin is not None:
             self.process.stdin.close()
+        if self.pbar is not None:
+            self.pbar.close()
         self.process.wait()
 
 

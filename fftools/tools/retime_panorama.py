@@ -158,7 +158,7 @@ class RetimePanorama(OneToOneTool):
             increasing = pos_sm[-1] >= pos_sm[0]
             pos_mono = enforce_monotonic(pos_sm, increasing=increasing)
             src_idx = remap_indices_to_constant_speed(pos_mono)
-            with VideoOutput(output_path, vin.width, vin.height, vin.framerate) as vout:
+            with VideoOutput(output_path, vin.width, vin.height, vin.framerate, vin.length) as vout:
                 for i in range(vin.length):
                     t = src_idx[i]
                     j0 = int(numpy.clip(math.floor(t), 0, vin.length - 1))

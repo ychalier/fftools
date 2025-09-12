@@ -131,7 +131,7 @@ class BlendFrame(OneToOneTool):
             "duration": self.duration
         })
         with utils.VideoInput(input_path) as vin:
-            with utils.VideoOutput(output_path, vin.width, vin.height, vin.framerate) as vout:
+            with utils.VideoOutput(output_path, vin.width, vin.height, vin.framerate, vin.length + self.duration - 1) as vout:
                 frames = []
                 for frame in vin:
                     frames.append(frame)
@@ -183,7 +183,8 @@ class BlendVideo(ManyToOneTool):
         with contextlib.ExitStack() as stack:
             for video_input in video_inputs:
                 stack.enter_context(video_input)
-            with utils.VideoOutput(output_path, video_inputs[0].width, video_inputs[0].height, video_inputs[0].framerate) as vout:
+            min_length = min(vin.length for vin in video_inputs)
+            with utils.VideoOutput(output_path, video_inputs[0].width, video_inputs[0].height, video_inputs[0].framerate, min_length) as vout:
                 while True:
                     frames: list[numpy.ndarray] = []
                     stop = False
@@ -241,7 +242,7 @@ class BlendVideo(ManyToOneTool):
                 framerate = self.framerate
             if height is None or framerate is None:
                 raise ValueError("Some video output parameters are not defined")
-            with utils.VideoOutput(output_path, width, height, framerate) as vout:
+            with utils.VideoOutput(output_path, width, height, framerate, min_size) as vout:
                 for j in range(min_size):
                     frames = []
                     for folder in folders:
