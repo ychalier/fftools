@@ -1,6 +1,8 @@
 from ..tool import Tool
 from .batch import Batch
-from .blend import BlendImage, BlendFrame, BlendVideo
+from .blend_frames import BlendFrames
+from .blend_to_image import BlendToImage
+from .blend_videos import BlendVideos
 from .carve import Carve
 from .concat import Concat
 from .cut import Cut
@@ -18,9 +20,9 @@ from .timestamp import Timestamp
 
 TOOL_LIST: list[type[Tool]] = [
     Batch,
-    BlendFrame,
-    BlendImage,
-    BlendVideo,
+    BlendFrames,
+    BlendToImage,
+    BlendVideos,
     Carve,
     Concat,
     Cut,

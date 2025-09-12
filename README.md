@@ -58,39 +58,25 @@ Many-to-one tools (like `blend-videos`, `concat` and `stack`) take their argumen
 
 For more details on each tool, run `fftools <tool> --help`.
 
-Tool | Description 
----- | ----------- 
-`batch` | Wrapper to execute FFmpeg commands on multiple files. All keywords arguments are passed to FFmpeg as-is 
-Output Template | `{parent}/{stem}{suffix}`
-`blend-to-image` | Extract the first frames of a video and merge them into a single image 
-Output Template | `{parent}/{stem}_{operation}_{exposure}.png`
-`blend-frames` | Blend consecutive frames of a video together 
-Output Template | `{parent}/{stem}_{operation}_{size}{suffix}`
-`blend-videos` | Blend multiple videos into one.
-`carve` |  | Resize an image using [seam carving](https://en.m.wikipedia.org/wiki/Seam_carving) (adapted from [andrewcampbell/seam-carving](https://github.com/andrewdcampbell/seam-carving), GPL3) 
-Output Template | `{parent}/{stem}_carved_{width}x{height}{suffix}`
-`concat` | Concatenate multiple image or video files into one video file
-`cut` |  | Cut a media (image or video) in a grid given the size of the cells 
-Output Template | `{parent}/{stem}_{row}_{col}{suffix}`
-`modulate` | Apply frequency modulation to images or videos 
-Output Template | `{parent}/{stem}_{method}_{alpha}{suffix}`
-`preview` | Extract thumbnails of evenly spaced moments of a video 
-Output Template | `{parent}/{stem}_preview.png`
-`probe` | Display information about a media file 
-Output Template | `{parent}/{stem}.json`
-`resize` | Resize any media (image or video), with smart features 
-Output Template | `{parent}/{stem}_{fit}_{width}x{height}{suffix}`
-`respeed` | Change the playback speed of a video, with smart features 
-Output Template | `{parent}/{stem}_x{speedup}{suffix}`
-`retime-panorama` | Retime a panoramic video to smoothen it 
-Output Template | `{parent}/{stem}_retimed_{radius}{suffix}`
-`scenes` | Extract a thumbnail of (roughly) every different scene in a video 
-Output Template | `{parent}/{stem}-scenes`
-`split` | Split a video file into parts of same duration 
-Output Template | `{parent}/{stem}_{i}{suffix}`
-`stack` | Stack videos in a grid
-`timestamp` | Add a timestamp over video given its creation datetime 
-Output Template | `{parent}/{stem}_timestamp{suffix}`
+Tool | Description
+---- | -----------
+`batch` | Wrapper to execute FFmpeg commands on multiple files. All keywords arguments are passed to FFmpeg as-is
+`blend-to-image` | Extract the first frames of a video and merge them into a single image
+`blend-frames` | Blend consecutive frames of a video together
+`blend-videos` | Blend multiple videos into one. | -
+`carve` | Resize an image using [seam carving](https://en.m.wikipedia.org/wiki/Seam_carving) (adapted from [andrewcampbell/seam-carving](https://github.com/andrewdcampbell/seam-carving), GPL3)
+`concat` | Concatenate multiple image or video files into one video file | -
+`cut` | Cut a media (image or video) in a grid given the size of the cells
+`modulate` | Apply frequency modulation to images or videos
+`preview` | Extract thumbnails of evenly spaced moments of a video
+`probe` | Display information about a media file
+`resize` | Resize any media (image or video), with smart features
+`respeed` | Change the playback speed of a video, with smart features
+`retime-panorama` | Retime a panoramic video to smoothen it
+`scenes` | Extract a thumbnail of (roughly) every different scene in a video
+`split` | Split a video file into parts of same duration
+`stack` | Stack videos in a grid | -
+`timestamp` | Add a timestamp over video given its creation datetime
 
 ## Contributing
 

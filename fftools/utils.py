@@ -347,3 +347,47 @@ def gauss(n: int, sigma: float, normalized: bool = False) -> list[float]:
         return weights
     total = sum(weights)
     return [w/total for w in weights]
+
+
+def weighted_sum(sigma: float) -> typing.Callable:
+    import numpy
+    def aux(frames):
+        n = frames.shape[0]
+        weights = numpy.reshape(gauss(n, sigma, True), (n, 1, 1, 1))
+        return numpy.sum(numpy.multiply(weights, frames), axis=0)
+    return aux
+
+
+def random_blend(frames):
+    import numpy
+    n, height, width, depth = frames.shape
+    indices = numpy.random.randint(0, n, (height, width))
+    row_indices, col_indices = numpy.meshgrid(numpy.arange(height), numpy.arange(width), indexing="ij")
+    return frames[indices, row_indices, col_indices, :]
+
+
+def getop(opname: str) -> typing.Callable:
+    import numpy
+    match opname:
+        case "average":
+            return lambda a: numpy.average(a, axis=0)
+        case "brighter":
+            return lambda a: numpy.max(a, axis=0)
+        case "darker":
+            return lambda a: numpy.min(a, axis=0)
+        case "sum":
+            return lambda a: numpy.sum(a, axis=0)
+        case "difference":
+            return lambda a: a[0] - numpy.sum(a[1:], axis=0)
+        case "weight1":
+            return weighted_sum(1)
+        case "weight3":
+            return weighted_sum(3)
+        case "weight5":
+            return weighted_sum(5)
+        case "weight10":
+            return weighted_sum(10)
+        case "random":
+            return random_blend
+        case _:
+            raise ValueError(f"Illegal operation '{opname}'")
