@@ -9,10 +9,10 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='fftools',
-    version='1.6.0',
+    version='1.7.0',
     packages=find_packages(),
     include_package_data=True,
-    description='A set of tools for FFmpeg',
+    description='A set of graphical tools built upon FFmpeg and other graphics libraries',
     long_description=README,
     url='https://chalier.fr/',
     author='Yohan Chalier',
@@ -21,5 +21,7 @@ setup(
         "numpy",
         "Pillow",
         "tqdm",
+        "opencv-python",
+        "python-dateutil"
     ],
 )

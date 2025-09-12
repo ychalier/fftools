@@ -19,25 +19,54 @@ class Carve(OneToOneTool):
 
     def __init__(self,
             template: str,
-            width: int,
-            height: int):
+            width: int | None = None,
+            height: int | None = None,
+            aspect: str | None = None):
         OneToOneTool.__init__(self, template)
         self.width = width
         self.height = height
+        self.aspect_ratio = utils.parse_aspect_ratio(aspect)
 
     @staticmethod
     def add_arguments(parser):
         OneToOneTool.add_arguments(parser)
-        parser.add_argument("width", type=int, default=None, help="target width in pixels")
-        parser.add_argument("height", type=int, default=None, help="target height in pixels")
+        parser.add_argument("-w", "--width", type=int, default=None, help="target width in pixels")
+        parser.add_argument("-g", "--height", type=int, default=None, help="target height in pixels")
+        parser.add_argument("-a", "--aspect", type=str, default=None, help="target aspect ratio")
 
     def process(self, input_path: pathlib.Path) -> pathlib.Path:
-        probe_result = utils.ffprobe(input_path)
-        dx = self.width - probe_result.width
-        dy = self.height - probe_result.height
+        probe = utils.ffprobe(input_path)
+        target_width = self.width
+        target_height = self.height
+        if target_width is None and target_height is None and self.aspect_ratio is None:
+            target_width = probe.width
+            target_height = probe.height
+        elif target_width is None and target_height is None and self.aspect_ratio is not None:
+            if probe.aspect > self.aspect_ratio:
+                target_height = probe.height
+                target_width = self.aspect_ratio * target_height
+            else:
+                target_width = probe.width
+                target_height = target_width / self.aspect_ratio
+        elif target_width is None and target_height is not None and self.aspect_ratio is None:
+            target_width = probe.width
+        elif target_width is not None and target_height is None and self.aspect_ratio is None:
+            target_height = probe.height
+        elif target_width is None and target_height is not None and self.aspect_ratio is not None:
+            target_width = target_height * self.aspect_ratio
+        elif target_width is not None and target_height is None and self.aspect_ratio is not None:
+            target_height = target_width / self.aspect_ratio
+        else:
+            assert target_width is not None and target_height is not None
+            if self.aspect_ratio is not None:
+                assert self.aspect_ratio == target_width / target_height
+        target_width = round(target_width)
+        target_height = round(target_height)
+        dx = target_width - probe.width
+        dy = target_height - probe.height
         output_path = self.inflate(input_path, {
-            "width": self.width,
-            "height": self.height,
+            "width": target_width,
+            "height": target_height,
         })
         seam_carve(input_path, dx, dy, output_path)
         return output_path

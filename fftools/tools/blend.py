@@ -53,31 +53,33 @@ def getop(opname: str) -> typing.Callable:
 
 class BlendImage(OneToOneTool):
 
-    NAME = "blendi"
-    DESC = "Blend consecutive frames of a video into a single image."
-    OUTPUT_PATH_TEMPLATE = "{parent}/{stem}_blend.png"
+    NAME = "blend-to-image"
+    DESC = "Extract the first frames of a video and merge them into a single image."
+    OUTPUT_PATH_TEMPLATE = "{parent}/{stem}_{operation}_{exposure}.png"
 
     def __init__(self,
             template: str,
             operation: str = "average",
-            start: str = "00:00:00",
-            duration: str = "1/10"):
+            start_time: str = "00:00:00",
+            exposure: str = "1/10"):
         OneToOneTool.__init__(self, template)
-        self.start = start
-        self.duration = utils.parse_fraction_duration(duration)
+        self.start_time = start_time
+        self.exposure = exposure
+        self.duration = utils.parse_exposure_duration(exposure)
+        self.opname = operation
         self.operation = getop(operation)
 
     @staticmethod
     def add_arguments(parser):
         OneToOneTool.add_arguments(parser)
-        parser.add_argument("-op", "--operation", type=str, help="Operation to blend the images together", default="average", choices=["average", "brighter", "darker", "sum", "difference", "random"])
-        parser.add_argument("-s", "--start", type=str, help="Starting timestamp, in FFMPEG format (HH:MM:SS.FFF)", default="00:00:00.000")
-        parser.add_argument("-d", "--duration", type=str, help="Exposure duration as a camera setting in seconds (1/100, 1/10, 1/4, 2, 30, ...)", default="1/10")
+        parser.add_argument("-p", "--operation", type=str, help="Operation to blend the frames together", default="average", choices=["average", "brighter", "darker", "sum", "difference", "random"])
+        parser.add_argument("-ss", "--start-time", type=str, help="Starting timestamp, in FFMPEG format (HH:MM:SS.FFF)", default="00:00:00.000")
+        parser.add_argument("-e", "--exposure", type=str, help="Exposure duration as a camera setting in seconds (1/100, 1/10, 1/4, 2, 30, ...)", default="1/10")
 
     def _extract_frames(self, input_path: pathlib.Path, folder: pathlib.Path):
         utils.ffmpeg(
             "-i", input_path,
-            "-ss", self.start,
+            "-ss", self.start_time,
             "-t", self.duration,
             folder / "%06d.png",
         )
@@ -98,44 +100,47 @@ class BlendImage(OneToOneTool):
     def process(self, input_path: pathlib.Path) -> pathlib.Path:
         with utils.tempdir() as folder:
             self._extract_frames(input_path, folder)
-            output_path = self.inflate(input_path)
+            output_path = self.inflate(input_path, {
+                "operation": self.opname,
+                "exposure": self.exposure
+            })
             self._merge_frames(folder, output_path)
         return output_path
 
 
 class BlendFrame(OneToOneTool):
 
-    NAME = "blendf"
-    DESC = "Blend consecutive frames of a video into another video."
-    OUTPUT_PATH_TEMPLATE = "{parent}/{stem}_{opname}{suffix}"
+    NAME = "blend-frames"
+    DESC = "Blend consecutive frames of a video together."
+    OUTPUT_PATH_TEMPLATE = "{parent}/{stem}_{operation}_{size}{suffix}"
 
     def __init__(self,
             template: str,
             operation: str = "average",
-            duration: int = 3):
+            size: int = 3):
         OneToOneTool.__init__(self, template)
-        self.duration = duration
+        self.size = size
         self.opname = operation
         self.operation = getop(operation)
 
     @staticmethod
     def add_arguments(parser):
         OneToOneTool.add_arguments(parser)
-        parser.add_argument("-op", "--operation", type=str, help="Operation to blend the images together", default="average", choices=["average", "brighter", "darker", "sum", "difference", "weight1", "weight3", "weight5", "weight10", "random"])
-        parser.add_argument("-d", "--duration", type=int, help="Exposure duration as a number of frames", default=3)
+        parser.add_argument("-p", "--operation", type=str, help="Operation to blend the images together", default="average", choices=["average", "brighter", "darker", "sum", "difference", "weight1", "weight3", "weight5", "weight10", "random"])
+        parser.add_argument("-s", "--size", type=int, help="Moving-window size (in frames) for blending", default=3)
 
     def process(self, input_path: pathlib.Path) -> pathlib.Path:
         import numpy
         output_path = self.inflate(input_path, {
-            "opname": self.opname,
-            "duration": self.duration
+            "operation": self.opname,
+            "size": self.size
         })
         with utils.VideoInput(input_path) as vin:
-            with utils.VideoOutput(output_path, vin.width, vin.height, vin.framerate, vin.length + self.duration - 1) as vout:
+            with utils.VideoOutput(output_path, vin.width, vin.height, vin.framerate, vin.length + self.size - 1) as vout:
                 frames = []
                 for frame in vin:
                     frames.append(frame)
-                    while len(frames) > self.duration:
+                    while len(frames) > self.size:
                         frames.pop(0)
                     vout.feed(self.operation(numpy.array(frames)))
                 while len(frames) > 1:
@@ -146,8 +151,8 @@ class BlendFrame(OneToOneTool):
 
 class BlendVideo(ManyToOneTool):
 
-    NAME = "blendv"
-    DESC = "Blend multiple videos into one"
+    NAME = "blend-videos"
+    DESC = "Blend multiple videos into one."
 
     def __init__(self,
             operation: str = "average",
@@ -168,7 +173,7 @@ class BlendVideo(ManyToOneTool):
     @staticmethod
     def add_arguments(parser):
         ManyToOneTool.add_arguments(parser)
-        parser.add_argument("-op", "--operation", type=str, help="Operation to blend the images together", default="average", choices=["average", "brighter", "darker", "sum", "difference", "random"])
+        parser.add_argument("-p", "--operation", type=str, help="Operation to blend the images together", default="average", choices=["average", "brighter", "darker", "sum", "difference", "random"])
         parser.add_argument("-ss", "--time-start", type=str, help="Starting timestamp, in FFMPEG format (HH:MM:SS.FFF)", default=None)
         parser.add_argument("-to", "--time-end", type=str, help="Ending timestamp, in FFMPEG format (HH:MM:SS.FFF)", default=None)
         parser.add_argument("-t", "--duration", type=str, help="Duration of the clip to extract, in FFMPEG format (HH:MM:SS.FFF)", default=None)

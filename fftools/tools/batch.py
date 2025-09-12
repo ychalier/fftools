@@ -8,7 +8,7 @@ from .. import utils
 class Batch(OneToOneTool):
 
     NAME = "batch"
-    DESC = "FFmpeg wrapper"
+    DESC = "Wrapper to execute FFmpeg commands on multiple files."
     OUTPUT_PATH_TEMPLATE = "{parent}/{stem}{suffix}"
 
     def __init__(self, template: str, args: str):

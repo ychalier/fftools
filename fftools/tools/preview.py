@@ -20,7 +20,7 @@ class Preview(OneToOneTool):
         OneToOneTool.add_arguments(parser)
         parser.add_argument("-r", "--nrows", type=int, default=3)
         parser.add_argument("-c", "--ncols", type=int, default=2)
-    
+
     def _extract_frames(self, input_path: pathlib.Path, folder: pathlib.Path):
         probe = utils.ffprobe(input_path)
         npreviews = self.nrows * self.ncols
@@ -53,7 +53,7 @@ class Preview(OneToOneTool):
                 image.paste(frame, (col * width, row * height))
         assert image is not None
         image.save(output_path)
-    
+
     def process(self, input_path: pathlib.Path) -> pathlib.Path:
         with utils.tempdir() as folder:
             self._extract_frames(input_path, folder)

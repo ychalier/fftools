@@ -1,4 +1,4 @@
-"""Utilities for manipulating videos and images around FFmpeg features.
+"""A set of graphical tools built upon FFmpeg and other graphics libraries.
 """
 import argparse
 import traceback

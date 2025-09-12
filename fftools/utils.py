@@ -35,6 +35,14 @@ def expand_paths(argstrings: list[str | pathlib.Path]) -> list[pathlib.Path]:
     return sorted([pathlib.Path(path) for path in source_paths])
 
 
+def is_image(path: pathlib.Path) -> bool:
+    return path.suffix.lower() in [".jpg", ".jpeg", ".apng", ".png", ".avif", ".bmp", ".tiff", ".dng", ".webp", ".tif"]
+
+
+def is_video(path: pathlib.Path) -> bool:
+    return path.suffix.lower() in [".mp4", ".avi", ".mov", ".mkv", ".flv", ".webm", ".gif", ".gifv", ".mpg", ".mpeg", ".m4v", ".mod", ".3gp", ".wmv", ".yuv"]
+
+
 def ffmpeg(*args: str | pathlib.Path,
         loglevel: str = "error",
         show_stats: bool = True,
@@ -68,6 +76,10 @@ class FFProbeResult:
     duration: float | None
     size: int
     creation: int
+    
+    @property
+    def aspect(self) -> float:
+        return self.width / self.height
 
 
 def ffprobe(path: pathlib.Path, ffprobe="ffprobe") -> FFProbeResult:
@@ -159,6 +171,8 @@ def format_eta(total_seconds: float) -> str:
 def parse_aspect_ratio(string: str | None) -> float | None:
     if string is None:
         return None
+    if re.match(r"^\d*(\.\d*)?$", string):
+        return float(string)
     up, down = re.split(r"[/:]", string)
     return float(up) / float(down)
 
@@ -181,7 +195,7 @@ def parse_bytes(string: str | None) -> int | None:
     return int(base * factor)
 
 
-def parse_fraction_duration(duration_string: str) -> str:
+def parse_exposure_duration(duration_string: str) -> str:
     match = re.match(r"^\d+$", duration_string)
     if match is not None:
         total_seconds = int(duration_string)

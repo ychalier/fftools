@@ -54,7 +54,7 @@ class Resize(OneToOneTool):
             height: int | None = None,
             longest_edge: int | None = None,
             scale: float = 1,
-            aspect_ratio: str | None = None,
+            aspect: str | None = None,
             fit: str = "fill",
             expand: bool = False,
             filter: str = "bicubic",
@@ -64,7 +64,7 @@ class Resize(OneToOneTool):
         self.height = height
         self.longest_edge = longest_edge
         self.scale = scale
-        self.aspect_ratio = utils.parse_aspect_ratio(aspect_ratio)
+        self.aspect_ratio = utils.parse_aspect_ratio(aspect)
         self.fit = fit
         self.expand = expand
         self.filter = filter
@@ -77,7 +77,7 @@ class Resize(OneToOneTool):
         parser.add_argument("-g", "--height", type=int, default=None, help="target height in pixels")
         parser.add_argument("-d", "--longest-edge", type=int, default=None, help="longest edge size in pixels")
         parser.add_argument("-s", "--scale", type=float, default=1, help="scaling factor")
-        parser.add_argument("-a", "--aspect-ratio", type=str, default=None, help="target aspect ratio")
+        parser.add_argument("-a", "--aspect", type=str, default=None, help="target aspect ratio")
         parser.add_argument("-f", "--fit", type=str, default="fill", choices=["fill", "cover", "contain"])
         parser.add_argument("-e", "--expand", action="store_true")
         parser.add_argument("-l", "--filter", type=str, default="bicubic", choices=RESIZE_FILTERS)

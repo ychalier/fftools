@@ -22,8 +22,8 @@ class Cut(OneToOneTool):
     @staticmethod
     def add_arguments(parser):
         OneToOneTool.add_arguments(parser)
-        parser.add_argument("-mw", "--max-width", type=int, default=None, help="max slice width")
-        parser.add_argument("-mh", "--max-height", type=int, default=None, help="max slice height")
+        parser.add_argument("-w", "--max-width", type=int, default=None, help="Max slice width")
+        parser.add_argument("-g", "--max-height", type=int, default=None, help="Max slice height")
     
     def process(self, input_path: pathlib.Path) -> pathlib.Path:
         """https://ffmpeg.org/ffmpeg-filters.html#crop

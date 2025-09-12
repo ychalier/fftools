@@ -1,33 +1,97 @@
-# FFmpeg Toolbelt
+# FFtools
 
-A set of tools for FFmpeg.
+A set of graphical tools built upon FFmpeg and other graphics libraries.
 
-See also:
+## Getting Started
 
-- [FFmpeg website](https://ffmpeg.org/)
-- [FFmpeg Documentation](https://ffmpeg.org/ffmpeg-all.html)
-- [FFmpeg Bug Tracker and Wiki](https://trac.ffmpeg.org/wiki)
+You'll need a working installation of [Python 3](https://www.python.org/). You'll also need [FFmpeg](https://ffmpeg.org/) binaries, available in `PATH`, the `ffmpeg -version` command should work.
+
+### Basic Installation
+
+The process should be straightforward.
+
+1. Download the [latest release](https://github.com/ychalier/fftools/releases)
+2. Install it with `pip`:
+   ```console
+   pip install ~/Downloads/fftools-1.7.0.tar.gz
+   ```
+
+### Alternative Installation
+
+If you want to access the code.
+
+1. Clone or [download](https://github.com/ychalier/fftools/archive/refs/heads/main.zip) this repository:
+   ```console
+   git clone https://github.com/ychalier/fftools.git
+   cd fftools
+   ```
+2. Install requirements:
+   ```console
+   pip install -r requirements.txt
+   ```
+
+### Usage
+
+The alias `fftools` represents either `python -m fftools` or `python fftools.py`, depending on the chosen installation method.
+
+```console
+fftools <tool> [options]
+```
+
+See below for the list of available tools or run `fftools --help` for a summary.
 
 ## Tools
 
-Tool | Description
----- | -----------
-Batch | FFmpeg wrapper for apply commands in batches
-BlendF | Blend frames of a video
-BlendI | Extract frames from a video and merge them into a single photo
-BlendV | Blend multiple videos into one
-Carve | Resize an image using [seam carving](https://en.m.wikipedia.org/wiki/Seam_carving) (adapted from [andrewcampbell/seam-carving](https://github.com/andrewdcampbell/seam-carving), GPL3)
-Concat | Concatenate several videos into one
-Cut | Cut an image or a video into parts of given width/height
-Extract | Extract frames of a video into a folder
-Merge | Merge images into a single video
-Modulate | Apply a filter to an image or a video in the frequency domain
-Preview | Generate a table of preview snapshots for a video
-Probe | Show information about a video file
-Resize | Resize a video or an image
-Retime Panorama | Retime a panoramic video to smoothen it
-Respeed | Change the speed or the duration of a video
-Stack | Stack videos in a grid
-Scenes | Extract all shots from a movie
-Split | Split a video into parts with a duration limit
-Timestamp | Overlay a timestamp over a video
+Most tools are applied to a single input file (except `blend-videos`, `concat` and `stack`). For each of them, you can specify one or more input file (glob patterns are supported) or folders (in which case all files within the folder are processed). The last argument will be considered as the template for the output filenames. This template can use the following placeholders:
+
+- `{parent}` (path to the parent folder of the input file),
+- `{stem}` (stem of the input filename, ie. filename without extension),
+- `{suffix}` (suffix of the input filename, ie. extension with the dot).
+- Some tools may also support additional placeholders, to allow for keeping track of processing parameters in the output filenames.
+
+Such one-to-one tools also support the following flags:
+- `-N, --no-execute`: prevent opening the file after processing,
+- `-G, --global-progress`: show global progress when processing multiple files,
+- `-O, --overwrite`: overwrite existing files (by default, unique filenames are generated).
+
+Many-to-one tools (like `blend-videos`, `concat` and `stack`) take their arguments in the same order (input files/folders first, then output path).
+
+For more details on each tool, run `fftools <tool> --help`.
+
+Tool | Description 
+---- | ----------- 
+`batch` | Wrapper to execute FFmpeg commands on multiple files. All keywords arguments are passed to FFmpeg as-is 
+Output Template | `{parent}/{stem}{suffix}`
+`blend-to-image` | Extract the first frames of a video and merge them into a single image 
+Output Template | `{parent}/{stem}_{operation}_{exposure}.png`
+`blend-frames` | Blend consecutive frames of a video together 
+Output Template | `{parent}/{stem}_{operation}_{size}{suffix}`
+`blend-videos` | Blend multiple videos into one.
+`carve` |  | Resize an image using [seam carving](https://en.m.wikipedia.org/wiki/Seam_carving) (adapted from [andrewcampbell/seam-carving](https://github.com/andrewdcampbell/seam-carving), GPL3) 
+Output Template | `{parent}/{stem}_carved_{width}x{height}{suffix}`
+`concat` | Concatenate multiple image or video files into one video file
+`cut` |  | Cut a media (image or video) in a grid given the size of the cells 
+Output Template | `{parent}/{stem}_{row}_{col}{suffix}`
+`modulate` | Apply frequency modulation to images or videos 
+Output Template | `{parent}/{stem}_{method}_{alpha}{suffix}`
+`preview` | Extract thumbnails of evenly spaced moments of a video 
+Output Template | `{parent}/{stem}_preview.png`
+`probe` | Display information about a media file 
+Output Template | `{parent}/{stem}.json`
+`resize` | Resize any media (image or video), with smart features 
+Output Template | `{parent}/{stem}_{fit}_{width}x{height}{suffix}`
+`respeed` | Change the playback speed of a video, with smart features 
+Output Template | `{parent}/{stem}_x{speedup}{suffix}`
+`retime-panorama` | Retime a panoramic video to smoothen it 
+Output Template | `{parent}/{stem}_retimed_{radius}{suffix}`
+`scenes` | Extract a thumbnail of (roughly) every different scene in a video 
+Output Template | `{parent}/{stem}-scenes`
+`split` | Split a video file into parts of same duration 
+Output Template | `{parent}/{stem}_{i}{suffix}`
+`stack` | Stack videos in a grid
+`timestamp` | Add a timestamp over video given its creation datetime 
+Output Template | `{parent}/{stem}_timestamp{suffix}`
+
+## Contributing
+
+Contributions are welcomed. Do not hesitate to submit a pull request with your changes! Submit bug reports and feature suggestions in the [issue tracker](https://github.com/ychalier/transflow/issues/new/choose).

@@ -3,10 +3,7 @@ from .batch import Batch
 from .blend import BlendImage, BlendFrame, BlendVideo
 from .carve import Carve
 from .concat import Concat
-from .convert import Convert
 from .cut import Cut
-from .extract import Extract
-from .merge import Merge
 from .modulate import Modulate
 from .preview import Preview
 from .probe import Probe
@@ -26,10 +23,7 @@ TOOL_LIST: list[type[Tool]] = [
     BlendVideo,
     Carve,
     Concat,
-    Convert,
     Cut,
-    Extract,
-    Merge,
     Modulate,
     Preview,
     Probe,

@@ -16,7 +16,7 @@ class Timestamp(OneToOneTool):
             template: str,
             timestamp: int | None = None,
             font_size: int = 36,
-            font_path: str = "C:\\Windows\\Fonts\\courbd.ttf",
+            font_path: str = "courbd.ttf",
             padding: int = 16,
             color: tuple[int, int, int, int] = (255, 255, 255, 255)):
         OneToOneTool.__init__(self, template)
@@ -32,8 +32,8 @@ class Timestamp(OneToOneTool):
     def add_arguments(parser):
         OneToOneTool.add_arguments(parser)
         parser.add_argument("-t", "--timestamp", type=int, help="start timestamp", default=None)
-        parser.add_argument("-fs", "--font-size", type=int, help="font size", default=36)
-        parser.add_argument("-ff", "--font-path", type=str, help="font size", default="C:\\Windows\\Fonts\\courbd.ttf")
+        parser.add_argument("-s", "--font-size", type=int, help="font size", default=36)
+        parser.add_argument("-f", "--font-path", type=str, help="font size", default="courbd.ttf")
         parser.add_argument("-p", "--padding", type=int, help="padding", default=16)
 
     def process(self, input_path: pathlib.Path) -> pathlib.Path:
