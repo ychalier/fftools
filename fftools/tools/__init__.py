@@ -11,6 +11,7 @@ from .preview import Preview
 from .probe import Probe
 from .resize import Resize
 from .respeed import Respeed
+from .retime_panorama import RetimePanorama
 from .scenes import Scenes
 from .split import Split
 from .stack import Stack
@@ -33,6 +34,7 @@ TOOL_LIST = [
     Probe,
     Resize,
     Respeed,
+    RetimePanorama,
     Scenes,
     Split,
     Stack,

@@ -25,6 +25,7 @@ Modulate | Apply a filter to an image or a video in the frequency domain
 Preview | Generate a table of preview snapshots for a video
 Probe | Show information about a video file
 Resize | Resize a video or an image
+Retime Panorama | Retime a panoramic video to smoothen it
 Respeed | Change the speed or the duration of a video
 Stack | Stack videos in a grid
 Scenes | Extract all shots from a movie

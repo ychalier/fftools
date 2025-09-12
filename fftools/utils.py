@@ -220,15 +220,17 @@ class VideoInput:
         import cv2
         self.capture: cv2.VideoCapture
         self.width: int 
-        self.height: str
-        self.framerate: str
+        self.height: int
+        self.framerate: float
+        self.length: int
 
     def __enter__(self):
         import cv2
-        self.capture = cv2.VideoCapture(self.path)
+        self.capture = cv2.VideoCapture(self.path.as_posix())
         self.width = int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.height = int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.framerate = self.capture.get(cv2.CAP_PROP_FPS)
+        self.framerate = self.capture.get(cv2.CAP_PROP_FPS) or 30.0
+        self.length = int(self.capture.get(cv2.CAP_PROP_FRAME_COUNT))
         return self
     
     def __iter__(self):
@@ -241,6 +243,15 @@ class VideoInput:
             raise StopIteration
         return numpy.array(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
     
+    def at(self, i: int):
+        import cv2
+        self.capture.set(cv2.CAP_PROP_POS_FRAMES, i)
+        return next(self)
+    
+    def rewind(self):
+        import cv2
+        self.capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+    
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.capture.release()
 
@@ -249,7 +260,7 @@ class VideoOutput:
 
     VCODEC = "h264"
 
-    def __init__(self, path: pathlib.Path, width: int, height: int, framerate: str):
+    def __init__(self, path: pathlib.Path, width: int, height: int, framerate: float):
         self.path = path
         self.width = width 
         self.height = height
