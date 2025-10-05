@@ -9,6 +9,7 @@ from .cut import Cut
 from .modulate import Modulate
 from .preview import Preview
 from .probe import Probe
+from .reach_target import ReachTarget
 from .resize import Resize
 from .respeed import Respeed
 from .retime_panorama import RetimePanorama
@@ -29,6 +30,7 @@ TOOL_LIST: list[type[Tool]] = [
     Modulate,
     Preview,
     Probe,
+    ReachTarget,
     Resize,
     Respeed,
     RetimePanorama,
