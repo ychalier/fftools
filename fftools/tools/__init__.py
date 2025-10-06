@@ -6,6 +6,7 @@ from .blend_videos import BlendVideos
 from .carve import Carve
 from .concat import Concat
 from .cut import Cut
+from .drift import Drift
 from .modulate import Modulate
 from .preview import Preview
 from .probe import Probe
@@ -27,6 +28,7 @@ TOOL_LIST: list[type[Tool]] = [
     Carve,
     Concat,
     Cut,
+    Drift,
     Modulate,
     Preview,
     Probe,
