@@ -25,9 +25,9 @@ class Concat(ManyToOneTool):
         parser.add_argument("-r", "--framerate", type=float, help="Target video framerate (when concatenating images only)")
         parser.add_argument("-t", "--duration", type=str, help="Target video duration (when concatenating images only)")
     
-    def process(self, input_paths: list[pathlib.Path], output_path: pathlib.Path):
-        are_images = list(map(utils.is_image, input_paths))
-        are_videos = list(map(utils.is_video, input_paths))
+    def process(self, inputs: list[utils.InputFile], output_path: pathlib.Path):
+        are_images = [utils.is_image(i.path) for i in inputs]
+        are_videos = [utils.is_video(i.path) for i in inputs]
         all_images = all(are_images)
         all_videos = all(are_videos)
         mixed = any(are_images) and any(are_videos)
@@ -36,15 +36,15 @@ class Concat(ManyToOneTool):
         with utils.tempdir() as folder:
             listpath = folder / "list.txt"
             with listpath.open("w") as file:
-                for source_path in input_paths:
-                    file.write(f"file '{source_path.absolute()}'\n")
+                for source_file in inputs:
+                    file.write(f"file '{source_file.path.absolute()}'\n")
             args = []
             if all_images:
                 framerate = 1.0
                 if self.framerate is not None:
                     framerate = self.framerate
                 elif self.duration is not None:
-                    framerate = len(input_paths) / self.duration
+                    framerate = len(inputs) / self.duration
                 args += ["-r", str(framerate)]
             args += [
                 "-f", "concat",

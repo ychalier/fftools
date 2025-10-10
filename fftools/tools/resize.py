@@ -83,7 +83,7 @@ class Resize(OneToOneTool):
         parser.add_argument("-l", "--filter", type=str, default="bicubic", choices=RESIZE_FILTERS)
         parser.add_argument("-b", "--bytes-limit", type=str, default=None, help="maximum file size (roughly)")
 
-    def _compute_output_parameters(self, input_path: pathlib.Path) -> ResizeParameters:
+    def _compute_output_parameters(self, input_file: utils.InputFile) -> ResizeParameters:
         params = ResizeParameters(
             width=self.width,
             height=self.height,
@@ -99,19 +99,18 @@ class Resize(OneToOneTool):
             base_width=None,
             base_height=None,
         )
-        probe_result = utils.ffprobe(input_path)
         if self.longest_edge is not None:
-            if probe_result.width > probe_result.height:
+            if input_file.probe.width > input_file.probe.height:
                 params.width = self.longest_edge
                 params.height = None
             else:
                 params.width = None
                 params.height = self.longest_edge
-        params.base_width = probe_result.width
-        params.base_height = probe_result.height
+        params.base_width = input_file.probe.width
+        params.base_height = input_file.probe.height
         if self.bytes_limit is not None:
-            params.scale = math.sqrt(self.bytes_limit / probe_result.size)
-        base_aspect_ratio = probe_result.width / probe_result.height
+            params.scale = math.sqrt(self.bytes_limit / input_file.probe.size)
+        base_aspect_ratio = input_file.probe.width / input_file.probe.height
         if params.aspect_ratio is None:
             if params.width is not None and params.height is not None:
                 params.aspect_ratio = params.width / params.height
@@ -120,14 +119,14 @@ class Resize(OneToOneTool):
         if params.width is None and params.height is None:
             if params.aspect_ratio >= base_aspect_ratio:
                 if params.expand:
-                    params.height = probe_result.height
+                    params.height = input_file.probe.height
                 else:
-                    params.width = probe_result.width
+                    params.width = input_file.probe.width
             else:
                 if params.expand:
-                    params.width = probe_result.width
+                    params.width = input_file.probe.width
                 else:
-                    params.height = probe_result.height
+                    params.height = input_file.probe.height
         if params.width is not None and params.height is not None:
             params.width = round(params.width * params.scale)
             params.height = round(params.height * params.scale)
@@ -141,38 +140,38 @@ class Resize(OneToOneTool):
             raise ValueError("Could not determine resizing width or height")
         params.width = 2 * int(params.width / 2)
         params.height = 2 * int(params.height / 2)
-        params.crop_width = probe_result.width
-        params.crop_height = probe_result.height
+        params.crop_width = input_file.probe.width
+        params.crop_height = input_file.probe.height
         if params.fit == "cover":
             if params.aspect_ratio > base_aspect_ratio:
-                params.crop_height = round(probe_result.width / params.aspect_ratio)
+                params.crop_height = round(input_file.probe.width / params.aspect_ratio)
             elif params.aspect_ratio < base_aspect_ratio:
-                params.crop_width = round(probe_result.height * params.aspect_ratio)
-        params.pad_width = probe_result.width
-        params.pad_height = probe_result.height
+                params.crop_width = round(input_file.probe.height * params.aspect_ratio)
+        params.pad_width = input_file.probe.width
+        params.pad_height = input_file.probe.height
         if params.fit == "contain":
             if params.aspect_ratio < base_aspect_ratio:
-                params.pad_height = round(probe_result.width / params.aspect_ratio)
+                params.pad_height = round(input_file.probe.width / params.aspect_ratio)
             elif params.aspect_ratio > base_aspect_ratio:
-                params.pad_width = round(probe_result.height * params.aspect_ratio)
+                params.pad_width = round(input_file.probe.height * params.aspect_ratio)
         return params
 
-    def process(self, input_path: pathlib.Path) -> pathlib.Path:
-        params = self._compute_output_parameters(input_path)
+    def process(self, input_file: utils.InputFile) -> pathlib.Path:
+        params = self._compute_output_parameters(input_file)
         vf = ""
         if params.fit == "cover":
             vf += f"crop={params.crop_width}:{params.crop_height},"
         elif params.fit == "contain":
             vf += f"pad={params.pad_width}:{params.pad_height}:(ow-iw)/2:(oh-ih)/2,"
         vf += f"scale={params.width}:{params.height}:flags={params.filter}"
-        output_path = self.inflate(input_path, {
+        output_path = self.inflate(input_file.path, {
             "width": params.width,
             "height": params.height,
             "scale": params.scale,
             "fit": params.fit,
         })
         utils.ffmpeg(
-            "-i", input_path,
+            "-i", input_file.path,
             "-vf", vf,
             output_path,
         )

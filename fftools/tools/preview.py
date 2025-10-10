@@ -54,9 +54,9 @@ class Preview(OneToOneTool):
         assert image is not None
         image.save(output_path)
 
-    def process(self, input_path: pathlib.Path) -> pathlib.Path:
+    def process(self, input_file: utils.InputFile) -> pathlib.Path:
         with utils.tempdir() as folder:
-            self._extract_frames(input_path, folder)
-            ouptut_path = self.inflate(input_path)
+            self._extract_frames(input_file.path, folder)
+            ouptut_path = self.inflate(input_file.path)
             self._merge_frames(folder, ouptut_path)
         return ouptut_path

@@ -34,24 +34,23 @@ class Carve(OneToOneTool):
         parser.add_argument("-g", "--height", type=int, default=None, help="target height in pixels")
         parser.add_argument("-a", "--aspect", type=str, default=None, help="target aspect ratio")
 
-    def process(self, input_path: pathlib.Path) -> pathlib.Path:
-        probe = utils.ffprobe(input_path)
+    def process(self, input_file: utils.InputFile) -> pathlib.Path:
         target_width = self.width
         target_height = self.height
         if target_width is None and target_height is None and self.aspect_ratio is None:
-            target_width = probe.width
-            target_height = probe.height
+            target_width = input_file.probe.width
+            target_height = input_file.probe.height
         elif target_width is None and target_height is None and self.aspect_ratio is not None:
-            if probe.aspect > self.aspect_ratio:
-                target_height = probe.height
+            if input_file.probe.aspect > self.aspect_ratio:
+                target_height = input_file.probe.height
                 target_width = self.aspect_ratio * target_height
             else:
-                target_width = probe.width
+                target_width = input_file.probe.width
                 target_height = target_width / self.aspect_ratio
         elif target_width is None and target_height is not None and self.aspect_ratio is None:
-            target_width = probe.width
+            target_width = input_file.probe.width
         elif target_width is not None and target_height is None and self.aspect_ratio is None:
-            target_height = probe.height
+            target_height = input_file.probe.height
         elif target_width is None and target_height is not None and self.aspect_ratio is not None:
             target_width = target_height * self.aspect_ratio
         elif target_width is not None and target_height is None and self.aspect_ratio is not None:
@@ -62,13 +61,13 @@ class Carve(OneToOneTool):
                 assert self.aspect_ratio == target_width / target_height
         target_width = round(target_width)
         target_height = round(target_height)
-        dx = target_width - probe.width
-        dy = target_height - probe.height
-        output_path = self.inflate(input_path, {
+        dx = target_width - input_file.probe.width
+        dy = target_height - input_file.probe.height
+        output_path = self.inflate(input_file.path, {
             "width": target_width,
             "height": target_height,
         })
-        seam_carve(input_path, dx, dy, output_path)
+        seam_carve(input_file.path, dx, dy, output_path)
         return output_path
 
 

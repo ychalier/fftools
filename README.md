@@ -52,9 +52,12 @@ Most tools are applied to a single input file (except `blend-videos`, `concat` a
 Such one-to-one tools also support the following flags:
 - `-N, --no-execute`: prevent opening the file after processing,
 - `-G, --global-progress`: show global progress when processing multiple files,
-- `-O, --overwrite`: overwrite existing files (by default, unique filenames are generated).
+- `-O, --overwrite`: overwrite existing files (by default, unique filenames are generated),
+- `-K, --keep-trimmed-files`: save trimmed input files next to their parent instead of a temporary folder (see paragraph below).
 
 Many-to-one tools (like `blend-videos`, `concat` and `stack`) take their arguments in the same order (input files/folders first, then output path).
+
+When processing video files, if you only want to process part of an input file, you can append a suffix of the form `#start-end` to the input filename, where `start` and `end` are timestamps in `HH:MM:SS[.FFF]` format or frame indices as integers. You can omit `start` or `end` to indicate the beginning or the end of the file respectively. For example, `input.mp4#30-90` will process the part of the video between frames 30 and 90, `input.mp4#30-` will skip the first 30 frames and `input.mp4#-30` will process the 30 frames of the video. By default, trimmed files are saved in a temporary folder. If you want to keep them, use the `-K, --keep-trimmed-files` flag.
 
 For more details on each tool, run `fftools <tool> --help`.
 

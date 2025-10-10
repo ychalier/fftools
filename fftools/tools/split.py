@@ -38,17 +38,16 @@ class Split(OneToOneTool):
             t += limit
         return stops
 
-    def process(self, input_path: pathlib.Path) -> pathlib.Path:
-        probe_result = utils.ffprobe(input_path)
-        if probe_result.duration is None:
+    def process(self, input_file: utils.InputFile) -> pathlib.Path:
+        if input_file.probe.duration is None:
             raise ValueError("Video has no duration")
-        stops = self._compute_stops(probe_result.duration)
+        stops = self._compute_stops(input_file.probe.duration)
         padi = max(1, math.ceil(math.log10(len(stops) - 1)))
         output_path = None
         for i, (time_start, time_end) in enumerate(zip(stops, stops[1:])):
-            output_path = self.inflate(input_path, {"i": f"{i:0{padi}d}"})
+            output_path = self.inflate(input_file.path, {"i": f"{i:0{padi}d}"})
             utils.ffmpeg(
-                "-i", input_path,
+                "-i", input_file.path,
                 "-ss", utils.format_timestamp(time_start),
                 "-to", utils.format_timestamp(time_end),
                 output_path

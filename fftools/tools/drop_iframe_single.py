@@ -143,12 +143,12 @@ class DropIFrameSingle(OneToOneTool):
                 output_path
             )
 
-    def process(self, input_path: pathlib.Path) -> pathlib.Path:
+    def process(self, input_file: utils.InputFile) -> pathlib.Path:
         if self.no_preprocessing:
-            preprocessed_path = input_path
+            preprocessed_path = input_file.path
         else:
-            preprocessed_path = self.inflate(input_path, {"state": "mosh_pre"})
-            self.apply_frame_map(input_path, preprocessed_path)
-        output_path = self.inflate(input_path, {"state": "mosh_post"})
+            preprocessed_path = self.inflate(input_file.path, {"state": "mosh_pre"})
+            self.apply_frame_map(input_file.path, preprocessed_path)
+        output_path = self.inflate(input_file.path, {"state": "mosh_post"})
         self.drop_iframes(preprocessed_path, output_path)
         return output_path

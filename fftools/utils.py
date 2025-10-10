@@ -5,6 +5,7 @@ import json
 import math
 import os
 import pathlib
+import random
 import re
 import subprocess
 import sys
@@ -15,26 +16,99 @@ import dateutil.parser
 import tqdm
 
 
-def expand_paths(argstrings: list[str | pathlib.Path], sort: bool = False) -> list[pathlib.Path]:
+def generate_nonce(length: int) -> str:
+    chars = "abcdefghijklmnopqrstuvwxyz0123456789"
+    return "".join(random.choice(chars) for _ in range(length))
+
+
+class InputFile:
+    
+    def __init__(self, path: pathlib.Path, trim_start: str | None = None, trim_end: str | None = None):
+        self.path: pathlib.Path = path
+        self.real_path: pathlib.Path = path
+        self.trim_start: str | None = trim_start
+        if self.trim_start == "":
+            self.trim_start = None
+        self.trim_end: str | None = trim_end
+        if self.trim_end == "":
+            self.trim_end = None
+        self.probe: 'FFProbeResult' = ffprobe(self.real_path)
+    
+    def __eq__(self, value: object) -> bool:
+        if isinstance(value, InputFile):
+            return self.path == value.path
+        return False
+    
+    def __lt__(self, value: object):
+        if isinstance(value, InputFile):
+            return self.path < value.path
+        raise TypeError()
+
+    def preprocess(self, use_temporary_file: bool = True):
+        if self.trim_start is None and self.trim_end is None:
+            return
+        if self.path.is_dir():
+            return
+        start_frame = 0
+        start_timestamp = None
+        if self.trim_start is not None:
+            if re.match(r"^\d+$", self.trim_start):
+                start_frame = int(self.trim_start)
+                start_timestamp = format_timestamp(start_frame / self.probe.framerate)
+            else:
+                start_frame = int(parse_timestamp(self.trim_start) * self.probe.framerate)
+                start_timestamp = self.trim_start
+        end_frame = -1
+        end_timestamp = None
+        if self.probe.duration is not None:
+            end_frame = int(self.probe.duration * self.probe.framerate)
+        if self.trim_end is not None:
+            if re.match(r"^\d+$", self.trim_end):
+                end_frame = int(self.trim_end)
+                end_timestamp = format_timestamp(end_frame / self.probe.framerate)
+            else:
+                end_frame = int(parse_timestamp(self.trim_end) * self.probe.framerate)
+                end_timestamp = self.trim_end
+        self.path = self.real_path.with_stem(f"{self.real_path.stem}_{start_frame}-{end_frame}")
+        print(f"Trimming {self.real_path.name} to [{start_frame}, {end_frame}]")
+        if use_temporary_file:
+            nonce = generate_nonce(4)
+            self.path = pathlib.Path(tempfile.gettempdir()) / f"{nonce}_{self.path.name}"
+        command = []
+        if start_timestamp is not None:
+            command += ["-ss", start_timestamp]
+        if end_timestamp is not None:
+            command += ["-to", end_timestamp]
+        ffmpeg("-i", self.real_path, *command, self.path)
+        self.probe = ffprobe(self.path)
+
+
+def expand_paths(argstrings: list[str], sort: bool = False) -> list[InputFile]:
     """Given a list of string (file paths, folder paths, glob patterns), returns
-    a flat list of paths.
+    a flat list of file inputs.
     """
-    source_paths = []
+    trim_pattern = re.compile(r"^(.*?)(?:#([\d:\.]*)\-([\d:\.]*))?$")
+    inputs: list[InputFile] = []
     for argstring in argstrings:
+        m = trim_pattern.match(argstring)
+        trim_start = None
+        trim_end = None
+        if m is not None:
+            argstring = m.group(1)
+            trim_start = m.group(2)
+            trim_end = m.group(3)
+        new_paths = []
         if os.path.isfile(argstring):
-            source_paths.append(argstring)
+            new_paths = [argstring]
         elif os.path.isdir(argstring):
             for filename in next(os.walk(argstring))[2]:
-                source_paths.append(os.path.join(argstring, filename))
-        elif isinstance(argstring, str):
-            source_paths += glob.glob(argstring)
-        elif isinstance(argstring, pathlib.Path):
-            source_paths += glob.glob(str(argstring))
+                new_paths.append(os.path.join(argstring, filename))
         else:
-            raise ValueError(f"Invalid argument type {type(argstring)}")
+            new_paths = glob.glob(argstring)
+        inputs += [InputFile(pathlib.Path(path), trim_start, trim_end) for path in new_paths]
     if sort:
-        return sorted([pathlib.Path(path) for path in source_paths])
-    return [pathlib.Path(path) for path in source_paths]
+        inputs.sort()
+    return inputs
 
 
 def is_image(path: pathlib.Path) -> bool:
@@ -161,6 +235,19 @@ def format_timestamp(total_seconds: float) -> str:
     s = int((total_seconds - 3600 * h - 60 * m))
     ms = round((total_seconds - 3600 * h - 60 * m - s) * 1000)
     return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
+
+
+def parse_timestamp(timestamp: str) -> float:
+    """Parse timestamp with format HH:MM:SS or HH:MM:SS.FFF and returns a value
+    in seconds.
+    """
+    m = re.match(r"(\d\d):(\d\d):(\d\d)(:?\.(\d\d\d))?", timestamp)
+    if m is None:
+        raise ValueError(f"Timestap has invalid format: {timestamp}")
+    seconds = 3600 * int(m.group(1)) + 60 * int(m.group(2)) + int(m.group(3))
+    if m.group(4) is not None:
+        seconds += int(m.group(4)) / 1000
+    return seconds
 
 
 def format_eta(total_seconds: float) -> str:

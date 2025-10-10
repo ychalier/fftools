@@ -6,7 +6,7 @@ import cv2
 import numpy
 
 from ..tool import OneToOneTool
-from ..utils import VideoInput, VideoOutput
+from ..utils import VideoInput, VideoOutput, InputFile
 
 
 def moving_average(x: numpy.ndarray, radius: int) -> numpy.ndarray:
@@ -147,9 +147,9 @@ class RetimePanorama(OneToOneTool):
         OneToOneTool.add_arguments(parser)
         parser.add_argument("-r", "--radius", type=int, default=1, help="Moving-average radius (in frames) for trajectory")
 
-    def process(self, input_path: Path) -> Path:
-        output_path = self.inflate(input_path, {"radius": self.radius})
-        with VideoInput(input_path) as vin:
+    def process(self, input_file: InputFile) -> Path:
+        output_path = self.inflate(input_file.path, {"radius": self.radius})
+        with VideoInput(input_file.path) as vin:
             dx, dy, valid = estimate_motion(vin)
             x, y = build_cumulative_path(dx, dy, valid)
             axis = decide_axis(x, y)

@@ -84,13 +84,13 @@ class Modulate(OneToOneTool):
         parser.add_argument("-m", "--method", type=str, default="outer", help="modulation operation to apply in the frequency space", choices=["outer", "inner", "scale", "random"])
         parser.add_argument("-a", "--alpha", type=float, default=0.01, help="modulation operation parameter")
 
-    def process(self, input_path: pathlib.Path) -> pathlib.Path:
-        output_path = self.inflate(input_path, {
+    def process(self, input_file: utils.InputFile) -> pathlib.Path:
+        output_path = self.inflate(input_file.path, {
             "method": self.method,
             "alpha": self.alpha,
         })
-        if input_path.suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp", ".avif"]:
-            modulate_image(input_path, output_path, self.method, self.alpha)
+        if input_file.path.suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp", ".avif"]:
+            modulate_image(input_file.path, output_path, self.method, self.alpha)
         else:
-            modulate_video(input_path, output_path, self.method, self.alpha)
+            modulate_video(input_file.path, output_path, self.method, self.alpha)
         return output_path

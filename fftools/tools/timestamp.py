@@ -36,23 +36,22 @@ class Timestamp(OneToOneTool):
         parser.add_argument("-f", "--font-path", type=str, help="font size", default="courbd.ttf")
         parser.add_argument("-p", "--padding", type=int, help="padding", default=16)
 
-    def process(self, input_path: pathlib.Path) -> pathlib.Path:
+    def process(self, input_file: utils.InputFile) -> pathlib.Path:
         import PIL.Image, tqdm
         with utils.tempdir() as tempdir:
             listfile_path = tempdir / "list.txt"
             with listfile_path.open("w") as listfile:
-                probe = utils.ffprobe(input_path)
-                start = probe.creation
+                start = input_file.probe.creation
                 if self.timestamp is not None:
                     start = self.timestamp
-                if probe.duration is None:
+                if input_file.probe.duration is None:
                     raise ValueError("Video has no duration")
-                for t in tqdm.tqdm(range(start, start + math.ceil(probe.duration))):
+                for t in tqdm.tqdm(range(start, start + math.ceil(input_file.probe.duration))):
                     d = datetime.datetime.fromtimestamp(t)
                     text = d.strftime("%Y-%m-%d %H:%M:%S")
                     mask_image = self.font.getmask(text, "L")
                     height = mask_image.size[1] + 2 * self.padding
-                    image = PIL.Image.new("RGB", (probe.width, height))
+                    image = PIL.Image.new("RGB", (input_file.probe.width, height))
                     image.im.paste(
                         self.color,
                         (self.padding, self.padding, mask_image.size[0] + self.padding, mask_image.size[1] + self.padding),
@@ -70,9 +69,9 @@ class Timestamp(OneToOneTool):
                 "-pix_fmt", "yuv420p",
                 banner_path
             )
-            output_path = self.inflate(input_path)
+            output_path = self.inflate(input_file.path)
             utils.ffmpeg(
-                "-i", input_path,
+                "-i", input_file.path,
                 "-i", banner_path,
                 "-filter_complex", "overlay=shortest=1",
                 output_path

@@ -25,14 +25,13 @@ class Cut(OneToOneTool):
         parser.add_argument("-w", "--max-width", type=int, default=None, help="Max slice width")
         parser.add_argument("-g", "--max-height", type=int, default=None, help="Max slice height")
     
-    def process(self, input_path: pathlib.Path) -> pathlib.Path:
+    def process(self, input_file: utils.InputFile) -> pathlib.Path:
         """https://ffmpeg.org/ffmpeg-filters.html#crop
         """
-        probe_result = utils.ffprobe(input_path)
-        width = probe_result.width if self.max_width is None else self.max_width
-        height = probe_result.height if self.max_height is None else self.max_height
-        rows = math.ceil(probe_result.height / height)
-        cols = math.ceil(probe_result.width / width)
+        width = input_file.probe.width if self.max_width is None else self.max_width
+        height = input_file.probe.height if self.max_height is None else self.max_height
+        rows = math.ceil(input_file.probe.height / height)
+        cols = math.ceil(input_file.probe.width / width)
         if rows == 0 or cols == 0:
             raise ValueError(f"Output will be empty: rows: {rows}, cols: {cols}")
         padi = max(1, math.ceil(math.log10(rows)))
@@ -40,13 +39,13 @@ class Cut(OneToOneTool):
         output_path = None
         for i in range(rows):
             for j in range(cols):
-                output_path = self.inflate(input_path, {
+                output_path = self.inflate(input_file.path, {
                     "row": f"{i:0{padi}d}",
                     "col": f"{j:0{padj}d}"
                 })
                 utils.ffmpeg(
                     "-i",
-                    input_path,
+                    input_file.path,
                     "-vf",
                     f"crop={width}:{height}:{j * width}:{i * height}",
                     output_path

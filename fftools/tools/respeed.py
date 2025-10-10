@@ -37,14 +37,13 @@ class Respeed(OneToOneTool):
         parser.add_argument("target", type=str, help="target speedup (xF) or duration (HH:MM:SS.FFF)")
         parser.add_argument("-r", "--raw", action="store_true", help="lossless (raw bitstream method, for H264)")
 
-    def process(self, input_path: pathlib.Path) -> pathlib.Path:
-        probe_result = utils.ffprobe(input_path)
-        speedup = parse_target(self.target, probe_result)
-        output_path = self.inflate(input_path, {"speedup": f"{speedup:.1f}"})
+    def process(self, input_file: utils.InputFile) -> pathlib.Path:
+        speedup = parse_target(self.target, input_file.probe)
+        output_path = self.inflate(input_file.path, {"speedup": f"{speedup:.1f}"})
         if self.raw:
             with utils.tempdir() as folder:
                 utils.ffmpeg(
-                    "-i", input_path,
+                    "-i", input_file.path,
                     "-map", "0:v",
                     "-c:v", "copy",
                     "-bsf:v", "h264_mp4toannexb",
@@ -52,14 +51,14 @@ class Respeed(OneToOneTool):
                 )
                 utils.ffmpeg(
                     "-fflags", "+genpts",
-                    "-r", str(probe_result.framerate * speedup),
+                    "-r", str(input_file.probe.framerate * speedup),
                     "-i", folder / "raw.h264",
                     "-c:v", "copy",
                     output_path,
                 )
         else:
             utils.ffmpeg(
-                "-i", input_path,
+                "-i", input_file.path,
                 "-an",
                 "-vf", f"setpts={1/speedup}*PTS",
                 output_path,

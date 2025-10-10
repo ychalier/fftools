@@ -31,11 +31,10 @@ class Stack(ManyToOneTool):
         parser.add_argument("-r", "--rows", type=int, default=None, help="force number of rows")
         parser.add_argument("-c", "--columns", type=int, default=None, help="force number of columns")
 
-    def process(self, input_paths: list[pathlib.Path], output_path: pathlib.Path):
-        n = len(input_paths)
-        probe = utils.ffprobe(input_paths[0])
-        self.font_size = int(probe.height * 0.15)
-        self.text_offset = int(probe.height * 0.21)
+    def process(self, inputs: list[utils.InputFile], output_path: pathlib.Path):
+        n = len(inputs)
+        self.font_size = int(inputs[0].probe.height * 0.15)
+        self.text_offset = int(inputs[0].probe.height * 0.21)
         if self.rows is not None and self.columns is not None:
             width = self.columns
             height = self.rows
@@ -51,8 +50,8 @@ class Stack(ManyToOneTool):
         args = []
         filter_args = []
         draw_arg = ""
-        for i, path in enumerate(input_paths):
-            args += ["-i", path.as_posix()]
+        for i, input_file in enumerate(inputs):
+            args += ["-i", input_file.path.as_posix()]
             if self.draw_text:
                 filter_args.append(
                     f"[{i}]drawtext=fontfile='{self.font_file}'"\
@@ -60,7 +59,7 @@ class Stack(ManyToOneTool):
                     f":fontcolor=black"\
                     f":box=1"\
                     f":boxcolor=white"\
-                    f":text='{path.stem}'"\
+                    f":text='{input_file.path.stem}'"\
                     f":x=(w-text_w)/2"\
                     f":y=h-{self.text_offset}"\
                     f"[v{i}]")

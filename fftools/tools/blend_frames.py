@@ -28,13 +28,13 @@ class BlendFrames(OneToOneTool):
         parser.add_argument("-s", "--size", type=int, help="Moving-window size (in frames) for blending", default=3)
         parser.add_argument("-f", "--fixed", action="store_true", help="Use fixed window instead of a rolling window")
 
-    def process(self, input_path: pathlib.Path) -> pathlib.Path:
+    def process(self, input_file: utils.InputFile) -> pathlib.Path:
         import numpy
-        output_path = self.inflate(input_path, {
+        output_path = self.inflate(input_file.path, {
             "operation": self.opname,
             "size": self.size
         })
-        with utils.VideoInput(input_path) as vin:
+        with utils.VideoInput(input_file.path) as vin:
             length = vin.length
             if not self.fixed:
                 length += self.size - 1

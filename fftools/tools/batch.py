@@ -20,10 +20,10 @@ class Batch(OneToOneTool):
         OneToOneTool.add_arguments(parser)
         parser.add_argument("args", type=str, nargs="?", default="", help="arguments to pass to FFmpeg")
 
-    def process(self, input_path: pathlib.Path) -> pathlib.Path:
-        output_path = self.inflate(input_path)
+    def process(self, input_file: utils.InputFile) -> pathlib.Path:
+        output_path = self.inflate(input_file.path)
         utils.ffmpeg(
-            "-i", input_path,
+            "-i", input_file.path,
             *self.args,
             output_path
         )

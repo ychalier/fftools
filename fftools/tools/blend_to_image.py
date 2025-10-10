@@ -50,10 +50,10 @@ class BlendToImage(OneToOneTool):
         merger = self.operation(stack)
         PIL.Image.fromarray(numpy.uint8(merger)).save(output_path)
 
-    def process(self, input_path: pathlib.Path) -> pathlib.Path:
+    def process(self, input_file: utils.InputFile) -> pathlib.Path:
         with utils.tempdir() as folder:
-            self._extract_frames(input_path, folder)
-            output_path = self.inflate(input_path, {
+            self._extract_frames(input_file.path, folder)
+            output_path = self.inflate(input_file.path, {
                 "operation": self.opname,
                 "exposure": self.exposure
             })

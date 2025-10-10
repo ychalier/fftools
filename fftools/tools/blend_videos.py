@@ -37,9 +37,9 @@ class BlendVideos(ManyToOneTool):
         parser.add_argument("-r", "--framerate", type=float, help="Framerate output (used if all inputs are folders)", default=None)
         parser.add_argument("--offline", action="store_true", help="Use offline frame extraction (as files), which is slower but less RAM intensive")
 
-    def _process_online(self, input_paths: list[pathlib.Path], output_path: pathlib.Path):
+    def _process_online(self, inputs: list[utils.InputFile], output_path: pathlib.Path):
         import numpy
-        video_inputs = [utils.VideoInput(input_path) for input_path in input_paths]
+        video_inputs = [utils.VideoInput(input_file.path) for input_file in inputs]
         if not video_inputs:
             return
         with contextlib.ExitStack() as stack:
@@ -60,24 +60,22 @@ class BlendVideos(ManyToOneTool):
                         break
                     vout.feed(self.operation(numpy.array(frames)))
 
-    def _process_offline(self, input_paths: list[pathlib.Path], output_path: pathlib.Path):
+    def _process_offline(self, inputs: list[utils.InputFile], output_path: pathlib.Path):
         import numpy, PIL.Image
         with utils.tempdir() as temp_root:
             folders: list[pathlib.Path] = []
             width, height, framerate = None, None, None
-
-            for i, input_path in enumerate(input_paths):
-                if input_path.is_dir():
-                    folders.append(input_path)
+            for i, input_file in enumerate(inputs):
+                if input_file.path.is_dir():
+                    folders.append(input_file.path)
                     continue
                 if width is None:
-                    probe = utils.ffprobe(input_path)
-                    width = probe.width
-                    height = probe.height
-                    framerate = probe.framerate
+                    width = input_file.probe.width
+                    height = input_file.probe.height
+                    framerate = input_file.probe.framerate
                 temp_folder = temp_root / f"{i}"
                 temp_folder.mkdir()
-                cmd = ["-i", input_path]
+                cmd = ["-i", input_file]
                 if self.time_start is not None:
                     cmd += ["-ss", self.time_start]
                 if self.time_end is not None:
@@ -112,8 +110,8 @@ class BlendVideos(ManyToOneTool):
                         frames.append(frame)
                     vout.feed(self.operation(numpy.array(frames)))
 
-    def process(self, input_paths: list[pathlib.Path], output_path: pathlib.Path):
+    def process(self, inputs: list[utils.InputFile], output_path: pathlib.Path):
         if self.offline:
-            self._process_offline(input_paths, output_path)
+            self._process_offline(inputs, output_path)
         else:
-            self._process_online(input_paths, output_path)
+            self._process_online(inputs, output_path)

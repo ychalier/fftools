@@ -21,20 +21,19 @@ class Probe(OneToOneTool):
         OneToOneTool.add_arguments(parser)
         parser.add_argument("-p", "--print-output", action="store_true", help="print result to stdout")
     
-    def process(self, input_path: pathlib.Path) -> pathlib.Path | None:
-        probe_result = utils.ffprobe(input_path)
+    def process(self, input_file: utils.InputFile) -> pathlib.Path | None:
         if self.print:
             rows = []
             width = 0
-            for key, value in zip(probe_result.__annotations__, dataclasses.astuple(probe_result)):
+            for key, value in zip(input_file.probe.__annotations__, dataclasses.astuple(input_file.probe)):
                 width = max(width, len(key))
                 rows.append((key, value))
-            print(input_path)
+            print(input_file.path)
             for key, value in rows:
                 print(key.ljust(width + 3, ".") + str(value))
             print("")
         else:
-            output_path = self.inflate(input_path)
+            output_path = self.inflate(input_file.path)
             with output_path.open("w", encoding="utf8") as file:
-                json.dump(dataclasses.asdict(probe_result), file, indent=4)
+                json.dump(dataclasses.asdict(input_file.probe), file, indent=4)
             return output_path

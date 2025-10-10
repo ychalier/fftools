@@ -66,9 +66,9 @@ class Scenes(OneToOneTool):
                 current_frame = next_frame
         print("Removed", removed_count, "of", frame_count, "frames")
     
-    def process(self, input_path: pathlib.Path) -> pathlib.Path:
-        output_path = self.inflate(input_path)
+    def process(self, input_file: utils.InputFile) -> pathlib.Path:
+        output_path = self.inflate(input_file.path)
         output_path.mkdir(exist_ok=True)
-        self._extract_keyframes(input_path, output_path)
+        self._extract_keyframes(input_file.path, output_path)
         self._delete_duplicates(output_path)
         return output_path
