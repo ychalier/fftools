@@ -3,3 +3,4 @@ opencv-python
 Pillow
 tqdm
 python-dateutil
+av

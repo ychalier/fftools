@@ -6,7 +6,8 @@ from .blend_videos import BlendVideos
 from .carve import Carve
 from .concat import Concat
 from .cut import Cut
-from .frame_map import FrameMap
+from .drop_iframe_single import DropIFrameSingle
+from .drop_iframe_multi import DropIFrameMulti
 from .modulate import Modulate
 from .preview import Preview
 from .probe import Probe
@@ -27,7 +28,8 @@ TOOL_LIST: list[type[Tool]] = [
     Carve,
     Concat,
     Cut,
-    FrameMap,
+    DropIFrameMulti,
+    DropIFrameSingle,
     Modulate,
     Preview,
     Probe,

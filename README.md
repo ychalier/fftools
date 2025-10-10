@@ -13,7 +13,7 @@ The process should be straightforward.
 1. Download the [latest release](https://github.com/ychalier/fftools/releases)
 2. Install it with `pip`:
    ```console
-   pip install ~/Downloads/fftools-1.7.0.tar.gz
+   pip install ~/Downloads/fftools-X.X.X.tar.gz
    ```
 
 ### Alternative Installation
@@ -67,6 +67,8 @@ Tool | Description
 `carve` | Resize an image using [seam carving](https://en.m.wikipedia.org/wiki/Seam_carving) (adapted from [andrewcampbell/seam-carving](https://github.com/andrewdcampbell/seam-carving), GPL3)
 `concat` | Concatenate multiple image or video files into one video file | -
 `cut` | Cut a media (image or video) in a grid given the size of the cells
+`drop-iframe-multi` | Concatenate multiple clips with a datamoshing effect
+`drop-iframe-single` | Exactly set a reference frames in a video clip and apply a datamoshing effect on it
 `modulate` | Apply frequency modulation to images or videos
 `preview` | Extract thumbnails of evenly spaced moments of a video
 `probe` | Display information about a media file

@@ -5,6 +5,11 @@ import traceback
 
 from .tools import TOOL_LIST
 
+__version__ = "1.8.0"
+__author__ = "Yohan Chalier"
+__maintainer__ = "Yohan Chalier"
+__email__ = "yohan@chalier.fr"
+
 
 HEADER = '\033[95m'
 OKBLUE = '\033[94m'

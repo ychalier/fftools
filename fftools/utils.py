@@ -15,7 +15,7 @@ import dateutil.parser
 import tqdm
 
 
-def expand_paths(argstrings: list[str | pathlib.Path]) -> list[pathlib.Path]:
+def expand_paths(argstrings: list[str | pathlib.Path], sort: bool = False) -> list[pathlib.Path]:
     """Given a list of string (file paths, folder paths, glob patterns), returns
     a flat list of paths.
     """
@@ -32,7 +32,9 @@ def expand_paths(argstrings: list[str | pathlib.Path]) -> list[pathlib.Path]:
             source_paths += glob.glob(str(argstring))
         else:
             raise ValueError(f"Invalid argument type {type(argstring)}")
-    return sorted([pathlib.Path(path) for path in source_paths])
+    if sort:
+        return sorted([pathlib.Path(path) for path in source_paths])
+    return [pathlib.Path(path) for path in source_paths]
 
 
 def is_image(path: pathlib.Path) -> bool:
