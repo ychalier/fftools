@@ -35,10 +35,14 @@ class OneToOneTool(Tool):
     def add_arguments(parser: argparse.ArgumentParser):
         parser.add_argument("input_path", type=str, help="input path")
         parser.add_argument("output_path", type=str, help="output path", nargs="?")
-        parser.add_argument("-N", "--no-execute", action="store_true", help="do not open the output file")
-        parser.add_argument("-O", "--overwrite", action="store_true", help="overwrite existing files")
-        parser.add_argument("-G", "--global-progress", action="store_true", help="show global progress if multiple inputs are provided")
-        parser.add_argument("-K", "--keep-trimmed-files", action="store_true", help="save trimmed input files next to their parent instead of tempdir")
+        parser.add_argument("-N", "--no-execute", action="store_true",
+            help="do not open the output file")
+        parser.add_argument("-O", "--overwrite", action="store_true",
+            help="overwrite existing files")
+        parser.add_argument("-G", "--global-progress", action="store_true",
+            help="show global progress if multiple inputs are provided")
+        parser.add_argument("-K", "--keep-trimmed-files", action="store_true",
+            help="save trimmed input files next to their parent instead of tempdir")
 
     @classmethod
     def run(cls, args: argparse.Namespace):
@@ -94,16 +98,19 @@ class ManyToOneTool(Tool):
     def add_arguments(parser: argparse.ArgumentParser):
         parser.add_argument("input_paths", type=str, help="input path", nargs="+")
         parser.add_argument("output_path", type=str, help="output path")
+        parser.add_argument("-K", "--keep-trimmed-files", action="store_true",
+            help="save trimmed input files next to their parent instead of tempdir")
 
     @classmethod
     def run(cls, args: argparse.Namespace):
         kwargs = vars(args)
         input_paths = kwargs.pop("input_paths")
+        keep_trimmed_files = kwargs.pop("keep_trimmed_files", False)
         output_path = utils.find_unique_path(pathlib.Path(kwargs.pop("output_path")))
         tool = cls(**kwargs)
         inputs = utils.expand_paths(input_paths, sort=tool.SORT)
         for input_file in inputs:
-            input_file.preprocess()
+            input_file.preprocess(use_temporary_file=not keep_trimmed_files)
         tool.process(inputs, output_path)
         utils.startfile(output_path)
 

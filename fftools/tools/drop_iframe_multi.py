@@ -10,15 +10,28 @@ class DropIFrameMulti(ManyToOneTool):
     NAME = "drop-iframe-multi"
     DESC = "Concatenate multiple clips with a datamoshing effect"
 
-    def __init__(self, quality: int = 1):
+    def __init__(self,
+            quality: int = 1,
+            allow_iframes: bool = False,
+            scenecut: float = 0,
+            me: str = "zero"):
         ManyToOneTool.__init__(self)
         self.quality = quality
+        self.allow_iframes = allow_iframes
+        self.scenecut = scenecut
+        self.me = me
 
     @staticmethod
     def add_arguments(parser):
         ManyToOneTool.add_arguments(parser)
         parser.add_argument("-q", "--quality", type=int, default=1, choices=list(range(32)),
             help="Quality setting for encoding")
+        parser.add_argument("-i", "--allow-iframes", action="store_true",
+            help="allow iframes within clips")
+        parser.add_argument("--scenecut", type=float, default=0,
+            help="scene cut threshold")
+        parser.add_argument("--me", type=str, default="zero", choices=["zero", "dia", "epzs", "hex", "umh", "esa", "tesa"],
+            help="Motion estimation method, choices are in decreasing order of speed.")
 
     def process(self, inputs: list[utils.InputFile], output_path: pathlib.Path):
         with utils.tempdir() as tmpdir:
@@ -29,16 +42,22 @@ class DropIFrameMulti(ManyToOneTool):
                 n_frames = int(input_file.probe.duration * input_file.probe.framerate)
                 part_path = tmpdir / f"{i:09d}.mp4"
                 print(f"[{i+1}/{len(inputs)}]", input_file.path.name)
+                args = []
+                if not self.allow_iframes:
+                    args += [
+                        "-g", f"{n_frames + 1}",
+                        "-keyint_min", f"{n_frames + 1}",
+                    ]
                 utils.ffmpeg(
                     "-i", input_file.path,
                     "-an",
                     "-vcodec", "libxvid",
                     "-q:v", f"{self.quality}",
-                    "-g", f"{n_frames + 1}",
-                    "-keyint_min", f"{n_frames + 1}",
+                    *args,
                     "-flags", "+bitexact",
-                    "-sc_threshold", "0",
-                    "-me_method", "zero",
+                    "-sc_threshold", str(self.scenecut),
+                    "-me_method", self.me,
+                    "-forced-idr", "1",
                     part_path,
                 )
                 part_paths.append(part_path)

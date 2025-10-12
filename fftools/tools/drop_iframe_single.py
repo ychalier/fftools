@@ -28,12 +28,16 @@ class DropIFrameSingle(OneToOneTool):
             quality: int = 1,
             preserve_timings: bool = False,
             no_preprocessing: bool = False,
-            iframe: str = ""):
+            iframe: str = "",
+            scenecut: float = 0,
+            me: str = "zero"):
         OneToOneTool.__init__(self, template)
         self.quality: int = quality
         self.preserve_timings = preserve_timings
         self.no_preprocessing = no_preprocessing
         self.iframe_expr = iframe
+        self.scenecut = scenecut
+        self.me = me
 
     @staticmethod
     def add_arguments(parser):
@@ -50,6 +54,10 @@ class DropIFrameSingle(OneToOneTool):
             "for deciding whether frame no. `i` should be a reference frame. "
             "`fps` is a constant variable representing input video framerate, "
             "as a float value. `math` and `random` modules are available.")
+        parser.add_argument("--scenecut", type=float, default=0,
+            help="scene cut threshold")
+        parser.add_argument("--me", type=str, default="zero", choices=["zero", "dia", "epzs", "hex", "umh", "esa", "tesa"],
+            help="Motion estimation method, choices are in decreasing order of speed.")
 
     def apply_frame_map(self, input_path: pathlib.Path, output_path: pathlib.Path):
         probe_result = utils.ffprobe(input_path)
@@ -79,8 +87,8 @@ class DropIFrameSingle(OneToOneTool):
                     "-g", f"{part_frames + 1}",
                     "-keyint_min", f"{part_frames + 1}",
                     "-flags", "+bitexact",
-                    "-sc_threshold", "0",
-                    "-me_method", "zero",
+                    "-sc_threshold", str(self.scenecut),
+                    "-me_method", self.me,
                     part_path,
                     show_stats=False
                 )

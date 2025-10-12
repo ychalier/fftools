@@ -238,13 +238,14 @@ def format_timestamp(total_seconds: float) -> str:
 
 
 def parse_timestamp(timestamp: str) -> float:
-    """Parse timestamp with format HH:MM:SS or HH:MM:SS.FFF and returns a value
-    in seconds.
+    """Parse timestamp with format (HH:)?MM:SS(.FFF)? and returns a value in seconds.
     """
-    m = re.match(r"(\d\d):(\d\d):(\d\d)(:?\.(\d\d\d))?", timestamp)
+    m = re.match(r"^(?:(\d\d):)?(\d\d):(\d\d)(?:\.(\d\d\d))?$", timestamp)
     if m is None:
         raise ValueError(f"Timestap has invalid format: {timestamp}")
-    seconds = 3600 * int(m.group(1)) + 60 * int(m.group(2)) + int(m.group(3))
+    seconds = 60 * int(m.group(2)) + int(m.group(3))
+    if m.group(1) is not None:
+        seconds = 3600 * int(m.group(1))
     if m.group(4) is not None:
         seconds += int(m.group(4)) / 1000
     return seconds
