@@ -66,34 +66,37 @@ class DropIFrameSingle(OneToOneTool):
         n_frames = int(probe_result.duration * probe_result.framerate)
         is_iframe = parse_lambda_expression(self.iframe_expr, ("i",), {"fps": probe_result.framerate})
         stops = list(filter(is_iframe, range(n_frames + 1)))
+        if stops[0] != 0:
+            stops.insert(0, 0)
         if stops[-1] != n_frames:
             stops.append(n_frames)
         part_paths: list[pathlib.Path] = []
         with utils.tempdir() as tmpdir:
-            pbar = tqdm.tqdm(total=n_frames, unit="frame", desc="Preprocessing")
-            for i, (part_start, part_end) in enumerate(zip(stops, stops[1:])):
-                part_frames_base = part_end - part_start
-                if self.preserve_timings:
-                    part_start = max(0, part_start - 1)
-                part_frames = part_end - part_start
-                part_path = tmpdir / f"{i:09d}.mp4"
-                part_paths.append(part_path)
-                utils.ffmpeg(
-                    "-i", input_path,
-                    "-vf", f"trim=start_frame={part_start}:end_frame={part_end},setpts=PTS-STARTPTS",
-                    "-an",
-                    "-vcodec", "libxvid",
-                    "-q:v", f"{self.quality}",
-                    "-g", f"{part_frames + 1}",
-                    "-keyint_min", f"{part_frames + 1}",
-                    "-flags", "+bitexact",
-                    "-sc_threshold", str(self.scenecut),
-                    "-me_method", self.me,
-                    part_path,
-                    show_stats=False
-                )
-                pbar.update(part_frames_base)
-            pbar.close()
+            with utils.VideoInput(input_path, hide_progress=False) as vin:
+                prev_frame = None
+                for j, (part_start, part_end) in enumerate(zip(stops, stops[1:])):
+                    part_path = tmpdir / f"{j:09d}.avi"
+                    part_paths.append(part_path)
+                    part_frames = part_end - part_start
+                    use_prev_frame = prev_frame is not None and self.preserve_timings
+                    if use_prev_frame:
+                        part_frames += 1
+                    ffargs = [
+                        "-q:v", f"{self.quality}",
+                        "-g", f"{part_frames + 1}",
+                        "-keyint_min", f"{part_frames + 1}",
+                        "-flags", "+bitexact",
+                        "-sc_threshold", str(self.scenecut),
+                        "-me_method", self.me,
+                    ]
+                    with utils.VideoOutput(part_path, vin.width, vin.height, vin.framerate, part_frames, "libxvid", ffargs, hide_progress=True) as vout:
+                        if use_prev_frame:
+                            vout.feed(prev_frame)
+                            part_frames -= 1
+                        for _ in range(part_frames):
+                            frame = next(vin)
+                            vout.feed(frame)
+                            prev_frame = frame
             list_path = tmpdir / "list.txt"
             with list_path.open("w") as file:
                 for part_path in part_paths:
@@ -155,7 +158,7 @@ class DropIFrameSingle(OneToOneTool):
         if self.no_preprocessing:
             preprocessed_path = input_file.path
         else:
-            preprocessed_path = self.inflate(input_file.path, {"state": "mosh_pre"})
+            preprocessed_path = self.inflate(input_file.path, {"state": "mosh_pre"}).with_suffix(".avi")
             self.apply_frame_map(input_file.path, preprocessed_path)
         output_path = self.inflate(input_file.path, {"state": "mosh_post"})
         self.drop_iframes(preprocessed_path, output_path)

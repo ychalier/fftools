@@ -335,7 +335,7 @@ def tempdir() -> typing.Generator[pathlib.Path, typing.Any, None]:
 
 class VideoInput:
 
-    def __init__(self, path: pathlib.Path):
+    def __init__(self, path: pathlib.Path, hide_progress: bool = True):
         self.path = path
         import cv2
         self.capture: cv2.VideoCapture
@@ -343,6 +343,8 @@ class VideoInput:
         self.height: int
         self.framerate: float
         self.length: int
+        self.hide_progress = hide_progress
+        self.pbar = None
 
     def __enter__(self):
         import cv2
@@ -351,6 +353,8 @@ class VideoInput:
         self.height = int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.framerate = self.capture.get(cv2.CAP_PROP_FPS) or 30.0
         self.length = int(self.capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        if not self.hide_progress:
+            self.pbar = tqdm.tqdm(total=self.length, unit="frame")
         return self
 
     def __iter__(self):
@@ -361,6 +365,9 @@ class VideoInput:
         success, frame = self.capture.read()
         if not success or frame is None:
             raise StopIteration
+        if self.pbar is not None:
+            self.pbar.update(1)
+            self.pbar.set_postfix({"time": format_timestamp(self.pbar.n / self.framerate)}, refresh=False)
         return numpy.array(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
     def at(self, i: int):
@@ -373,19 +380,30 @@ class VideoInput:
         self.capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.pbar is not None:
+            self.pbar.close()
         self.capture.release()
 
 
 class VideoOutput:
 
-    VCODEC = "h264"
-
-    def __init__(self, path: pathlib.Path, width: int, height: int, framerate: float, length: int | None = None):
+    def __init__(self,
+            path: pathlib.Path,
+            width: int,
+            height: int,
+            framerate: float,
+            length: int | None = None,
+            vcodec: str = "h264",
+            ffmpeg_args: list[str] = [],
+            hide_progress: bool = False):
         self.path = path
         self.width = width
         self.height = height
         self.framerate = framerate
         self.length = length
+        self.vcodec = vcodec
+        self.ffmpeg_args = ffmpeg_args
+        self.hide_progress = hide_progress
         self.process: subprocess.Popen[bytes]
         self.pbar = None
 
@@ -394,20 +412,22 @@ class VideoOutput:
             "-hide_banner",
             "-loglevel", "error",
             "-f", "rawvideo"]
-        if self.length is None:
-            cmd.append("-stats")
-        else:
-            self.pbar = tqdm.tqdm(total=self.length, unit="frame")
+        if not self.hide_progress:
+            if self.length is None:
+                cmd.append("-stats")
+            else:
+                self.pbar = tqdm.tqdm(total=self.length, unit="frame")
         cmd += [
-            "-vcodec","rawvideo",
-            "-s", f"{self.width}x{self.height}",
+            # "-vcodec","rawvideo",
+            "-f", "rawvideo",
             "-pix_fmt", "rgb24",
+            "-s", f"{self.width}x{self.height}",
             "-r", f"{self.framerate}",
             "-i", "-",
-            "-r", f"{self.framerate}",
-            "-pix_fmt", "yuv420p",
             "-an",
-            "-vcodec", self.VCODEC,
+            "-pix_fmt", "yuv420p",
+            "-vcodec", self.vcodec,
+            *self.ffmpeg_args,
             self.path.as_posix(),
             "-y"
         ]

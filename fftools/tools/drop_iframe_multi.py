@@ -40,7 +40,7 @@ class DropIFrameMulti(ManyToOneTool):
                 if input_file.probe.duration is None:
                     raise ValueError(f"{input_file} has no duration")
                 n_frames = int(input_file.probe.duration * input_file.probe.framerate)
-                part_path = tmpdir / f"{i:09d}.mp4"
+                part_path = tmpdir / f"{i:09d}.avi"
                 print(f"[{i+1}/{len(inputs)}]", input_file.path.name)
                 args = []
                 if not self.allow_iframes:
@@ -65,7 +65,7 @@ class DropIFrameMulti(ManyToOneTool):
             with list_path.open("w") as file:
                 for part_path in part_paths:
                     file.write(f"file '{part_path.as_posix()}'\n")
-            xvid_path = tmpdir / "xvid.mp4"
+            xvid_path = tmpdir / "xvid.avi"
             utils.ffmpeg(
                 "-f", "concat",
                 "-safe", "0",
