@@ -105,6 +105,8 @@ def expand_paths(argstrings: list[str], sort: bool = False) -> list[InputFile]:
                 new_paths.append(os.path.join(argstring, filename))
         else:
             new_paths = glob.glob(argstring)
+        if not new_paths:
+            raise FileNotFoundError(argstring)
         inputs += [InputFile(pathlib.Path(path), trim_start, trim_end) for path in new_paths]
     if sort:
         inputs.sort()

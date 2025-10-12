@@ -51,6 +51,8 @@ def main():
         tool_cls.run(args)
     except KeyboardInterrupt:
         print(OKBLUE + "Interrupting" + ENDC)
+    except FileNotFoundError as err:
+        print(FAIL + f"File Not Found: {err}" + ENDC)
     except Exception as err:
         print(FAIL + f"Error: {err}" + ENDC)
         traceback.print_exc()
