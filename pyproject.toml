@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fftools"
+description = "A set of graphical tools built upon FFmpeg and other graphics libraries."
+dynamic = ["version", "readme"]
+authors = [
+    {name = "Yohan Chalier", email = "yohan@chalier.fr"},
+]
+
+keywords = ["ffmpeg", "video", "image", "graphics", "tools"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Multimedia :: Graphics",
+    "Intended Audience :: End Users/Desktop",
+    "Development Status :: 4 - Beta",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "Pillow",
+    "tqdm",
+    "opencv-python",
+    "python-dateutil",
+    "av",
+]
+
+
+[project.urls]
+homepage = "https://chalier.fr/"
+repository = "https://github.com/ychalier/fftools"
+issues = "https://github.com/ychalier/fftools/issues"
+
+[project.scripts]
+fftools = "fftools.__main__:main"
+
+[tool.setuptools]
+packages = { find = {} }
+
+[tool.setuptools.dynamic]
+version = { attr = "fftools.__version__" }
+readme = { file = "README.md", content-type = "text/markdown" }

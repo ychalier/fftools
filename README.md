@@ -32,7 +32,7 @@ If you want to access the code.
 
 ### Usage
 
-The alias `fftools` represents either `python -m fftools` or `python fftools.py`, depending on the chosen installation method.
+The alias `fftools` represents either `python -m fftools` or `python cli.py`, depending on the chosen installation method.
 
 ```console
 fftools <tool> [options]
