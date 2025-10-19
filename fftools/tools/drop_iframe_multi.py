@@ -36,9 +36,13 @@ class DropIFrameMulti(ManyToOneTool):
     def process(self, inputs: list[utils.InputFile], output_path: pathlib.Path):
         with utils.tempdir() as tmpdir:
             part_paths: list[pathlib.Path] = []
+            framerate: float = 30
             for i, input_file in enumerate(inputs):
                 if input_file.probe.duration is None:
                     raise ValueError(f"{input_file} has no duration")
+                if i == 0:
+                    framerate = input_file.probe.framerate
+                    print("Locking framerate to", framerate)
                 n_frames = int(input_file.probe.duration * input_file.probe.framerate)
                 part_path = tmpdir / f"{i:09d}.avi"
                 print(f"[{i+1}/{len(inputs)}]", input_file.path.name)
@@ -51,6 +55,7 @@ class DropIFrameMulti(ManyToOneTool):
                 utils.ffmpeg(
                     "-i", input_file.path,
                     "-an",
+                    "-vf", f"fps={framerate}",
                     "-vcodec", "libxvid",
                     "-q:v", f"{self.quality}",
                     *args,
