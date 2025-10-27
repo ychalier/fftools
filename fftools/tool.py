@@ -35,13 +35,14 @@ class OneToOneTool(Tool):
     def add_arguments(parser: argparse.ArgumentParser):
         parser.add_argument("input_path", type=str, help="input path")
         parser.add_argument("output_path", type=str, help="output path", nargs="?")
-        parser.add_argument("-N", "--no-execute", action="store_true",
+        group = parser.add_argument_group("processing options")
+        group.add_argument("-N", "--no-execute", action="store_true",
             help="do not open the output file")
-        parser.add_argument("-O", "--overwrite", action="store_true",
+        group.add_argument("-O", "--overwrite", action="store_true",
             help="overwrite existing files")
-        parser.add_argument("-G", "--global-progress", action="store_true",
+        group.add_argument("-G", "--global-progress", action="store_true",
             help="show global progress if multiple inputs are provided")
-        parser.add_argument("-K", "--keep-trimmed-files", action="store_true",
+        group.add_argument("-K", "--keep-trimmed-files", action="store_true",
             help="save trimmed input files next to their parent instead of tempdir")
 
     @classmethod
@@ -98,7 +99,8 @@ class ManyToOneTool(Tool):
     def add_arguments(parser: argparse.ArgumentParser):
         parser.add_argument("input_paths", type=str, help="input path", nargs="+")
         parser.add_argument("output_path", type=str, help="output path")
-        parser.add_argument("-K", "--keep-trimmed-files", action="store_true",
+        group = parser.add_argument_group("processing options")
+        group.add_argument("-K", "--keep-trimmed-files", action="store_true",
             help="save trimmed input files next to their parent instead of tempdir")
 
     @classmethod
