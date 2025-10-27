@@ -3,10 +3,11 @@ import pathlib
 import random
 from typing import Callable
 
-import tqdm
-
 from ..tool import OneToOneTool
 from .. import utils
+
+# TODO: Consider using FFmpeg's -refs argument
+# @see https://ffmpeg.org/ffmpeg-all.html
 
 
 def parse_lambda_expression(expr_string: str, vars: tuple[str, ...], context: dict[str, object] = {}) -> Callable:
@@ -20,7 +21,7 @@ def parse_lambda_expression(expr_string: str, vars: tuple[str, ...], context: di
 class DropIFrameSingle(OneToOneTool):
 
     NAME = "drop-iframe-single"
-    DESC = "Exactly set a reference frames in a video clip and apply a datamoshing effect on it"
+    DESC = "Exactly set reference frames in a video clip and apply a datamoshing effect on it"
     OUTPUT_PATH_TEMPLATE = "{parent}/{stem}_{state}{suffix}"
 
     def __init__(self,
@@ -28,8 +29,10 @@ class DropIFrameSingle(OneToOneTool):
             quality: int = 1,
             preserve_timings: bool = False,
             no_preprocessing: bool = False,
-            iframe: str = "",
-            scenecut: float = 0,
+            iframe: str | None = None,
+            scenecut: float | None = None,
+            gop_min: int | None = None,
+            gop_max: int | None = None,
             me: str = "zero"):
         OneToOneTool.__init__(self, template)
         self.quality: int = quality
@@ -37,6 +40,8 @@ class DropIFrameSingle(OneToOneTool):
         self.no_preprocessing = no_preprocessing
         self.iframe_expr = iframe
         self.scenecut = scenecut
+        self.gop_min = gop_min
+        self.gop_max = gop_max
         self.me = me
 
     @staticmethod
@@ -48,15 +53,24 @@ class DropIFrameSingle(OneToOneTool):
             help="Duplicate frames in preprocessing to preserve timings in output video")
         parser.add_argument("-n", "--no-preprocessing", action="store_true",
             help="Skip preprocessing step")
-        parser.add_argument("-i", "--iframe", type=str,
-            default="i % int(fps) == 0",
+        parser.add_argument("-i", "--iframe", type=str, default=None,
             help="Pythonic expression evaluated on variable `i` (frame index) "
             "for deciding whether frame no. `i` should be a reference frame. "
             "`fps` is a constant variable representing input video framerate, "
-            "as a float value. `math` and `random` modules are available.")
-        parser.add_argument("--scenecut", type=float, default=0,
-            help="scene cut threshold")
-        parser.add_argument("--me", type=str, default="zero", choices=["zero", "dia", "epzs", "hex", "umh", "esa", "tesa"],
+            "as a float value. `math` and `random` modules are available. If "
+            "not set, mapping will rely on internal XVID mechanics, controlled "
+            "with --scenecut, --gop-min and --gop-max arguments.")
+        parser.add_argument("--scenecut", type=float, default=None,
+            help="scene cut threshold, value should default to 40; if --iframe "
+            "expression is set, this is forced to 0")
+        parser.add_argument("--gop-min", type=int, default=None,
+            help="minimum number of frames between two reference frames; "
+            "this is ignored if --iframe expression is set")
+        parser.add_argument("--gop-max", type=int, default=None,
+            help="maximum number of frames between two reference frames; "
+            "this is ignored if --iframe expression is set")
+        parser.add_argument("--me", type=str, default="zero",
+            choices=["zero", "dia", "epzs", "hex", "umh", "esa", "tesa"],
             help="Motion estimation method, choices are in decreasing order of speed.")
 
     def apply_frame_map(self, input_path: pathlib.Path, output_path: pathlib.Path):
@@ -64,12 +78,18 @@ class DropIFrameSingle(OneToOneTool):
         if probe_result.duration is None:
             raise ValueError("Video has no duration")
         n_frames = int(probe_result.duration * probe_result.framerate)
-        is_iframe = parse_lambda_expression(self.iframe_expr, ("i",), {"fps": probe_result.framerate})
-        stops = list(filter(is_iframe, range(n_frames + 1)))
+
+        stops = []
+        if self.iframe_expr is not None:
+            is_iframe = parse_lambda_expression(self.iframe_expr, ("i",), {"fps": probe_result.framerate})
+            stops = list(filter(is_iframe, range(n_frames + 1)))
+        if len(stops) == 0:
+            stops.append(0)
         if stops[0] != 0:
             stops.insert(0, 0)
         if stops[-1] != n_frames:
             stops.append(n_frames)
+
         part_paths: list[pathlib.Path] = []
         with utils.tempdir() as tmpdir:
             with utils.VideoInput(input_path, hide_progress=False) as vin:
@@ -83,12 +103,22 @@ class DropIFrameSingle(OneToOneTool):
                         part_frames += 1
                     ffargs = [
                         "-q:v", f"{self.quality}",
-                        "-g", f"{part_frames + 1}",
-                        "-keyint_min", f"{part_frames + 1}",
                         "-flags", "+bitexact",
-                        "-sc_threshold", str(self.scenecut),
                         "-me_method", self.me,
                     ]
+                    if self.iframe_expr is not None:
+                        ffargs += [
+                            "-g", f"{part_frames + 1}",
+                            "-keyint_min", f"{part_frames + 1}",
+                            "-sc_threshold", "0",
+                        ]
+                    else:
+                        if self.scenecut is not None:
+                            ffargs += ["-sc_threshold", str(self.scenecut)]
+                        if self.gop_min is not None:
+                            ffargs += ["-keyint_min", str(self.gop_min)]
+                        if self.gop_max is not None:
+                            ffargs += ["-g", str(self.gop_max)]
                     with utils.VideoOutput(part_path, vin.width, vin.height, vin.framerate, part_frames, "libxvid", ffargs, hide_progress=True) as vout:
                         if use_prev_frame:
                             vout.feed(prev_frame)

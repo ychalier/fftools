@@ -71,7 +71,7 @@ Tool | Description
 `concat` | Concatenate multiple image or video files into one video file
 `cut` | Cut a media (image or video) in a grid given the size of the cells
 `drop-iframe-multi` | Concatenate multiple clips with a datamoshing effect
-`drop-iframe-single` | Exactly set a reference frames in a video clip and apply a datamoshing effect on it
+`drop-iframe-single` | Exactly set reference frames in a video clip and apply a datamoshing effect on it
 `modulate` | Apply frequency modulation to images or videos
 `preview` | Extract thumbnails of evenly spaced moments of a video
 `probe` | Display information about a media file
