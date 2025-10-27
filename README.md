@@ -66,9 +66,9 @@ Tool | Description
 `batch` | Wrapper to execute FFmpeg commands on multiple files. All keywords arguments are passed to FFmpeg as-is
 `blend-to-image` | Extract the first frames of a video and merge them into a single image
 `blend-frames` | Blend consecutive frames of a video together
-`blend-videos` | Blend multiple videos into one. | -
+`blend-videos` | Blend multiple videos into one.
 `carve` | Resize an image using [seam carving](https://en.m.wikipedia.org/wiki/Seam_carving) (adapted from [andrewcampbell/seam-carving](https://github.com/andrewdcampbell/seam-carving), GPL3)
-`concat` | Concatenate multiple image or video files into one video file | -
+`concat` | Concatenate multiple image or video files into one video file
 `cut` | Cut a media (image or video) in a grid given the size of the cells
 `drop-iframe-multi` | Concatenate multiple clips with a datamoshing effect
 `drop-iframe-single` | Exactly set a reference frames in a video clip and apply a datamoshing effect on it
@@ -80,7 +80,8 @@ Tool | Description
 `retime-panorama` | Retime a panoramic video to smoothen it
 `scenes` | Extract a thumbnail of (roughly) every different scene in a video
 `split` | Split a video file into parts of same duration
-`stack` | Stack videos in a grid | -
+`squeeze` | Vertically squeeze a video with an irregular shape
+`stack` | Stack videos in a grid
 `timestamp` | Add a timestamp over video given its creation datetime
 
 ## Contributing

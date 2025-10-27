@@ -16,6 +16,7 @@ from .respeed import Respeed
 from .retime_panorama import RetimePanorama
 from .scenes import Scenes
 from .split import Split
+from .squeeze import Squeeze
 from .stack import Stack
 from .timestamp import Timestamp
 
@@ -38,6 +39,7 @@ TOOL_LIST: list[type[Tool]] = [
     RetimePanorama,
     Scenes,
     Split,
+    Squeeze,
     Stack,
     Timestamp,
 ]
