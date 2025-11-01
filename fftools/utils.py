@@ -89,7 +89,10 @@ def expand_paths(argstrings: list[str], sort: bool = False) -> list[InputFile]:
     """
     trim_pattern = re.compile(r"^(.*?)(?:#([\d:\.]*)\-([\d:\.]*))?$")
     inputs: list[InputFile] = []
-    f = lambda path: os.path.basename(path) != "desktop.ini"
+    smart_filters = [
+        lambda path: os.path.basename(path) != "desktop.ini",
+        lambda path: not os.path.isdir(path)
+    ]
     for argstring in argstrings:
         m = trim_pattern.match(argstring)
         trim_start = None
@@ -108,7 +111,9 @@ def expand_paths(argstrings: list[str], sort: bool = False) -> list[InputFile]:
             new_paths = glob.glob(argstring)
         if not new_paths:
             raise FileNotFoundError(argstring)
-        inputs += [InputFile(pathlib.Path(path), trim_start, trim_end) for path in filter(f, new_paths)]
+        for f in smart_filters:
+            new_paths = filter(f, new_paths)
+        inputs += [InputFile(pathlib.Path(path), trim_start, trim_end) for path in new_paths]
     if sort:
         inputs.sort()
     return inputs
