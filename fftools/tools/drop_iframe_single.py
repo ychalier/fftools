@@ -157,12 +157,15 @@ class DropIFrameSingle(OneToOneTool):
             container = av.open(input_path.as_posix())
             output = av.open(badpts_path.as_posix(), mode="w")
             video_stream = container.streams.video[0]
+            stream_kwargs = {}
+            if video_stream.bit_rate is not None:
+                stream_kwargs["bit_rate"] = video_stream.bit_rate
             output.add_stream(
                 video_stream.codec.name,
                 pix_fmt=video_stream.pix_fmt,
                 width=video_stream.width,
                 height=video_stream.height,
-                bit_rate=video_stream.bit_rate,
+                **stream_kwargs
             )
             first_iframe_written = False
             for packet in container.demux(video_stream):

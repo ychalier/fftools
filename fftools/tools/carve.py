@@ -222,7 +222,10 @@ def seam_carve(
             pbar.update(1)
         return im
 
-    im = cv2.imread(input_path.as_posix()).astype(numpy.float64)
+    im = cv2.imread(input_path.as_posix())
+    if im is None:
+        raise ValueError(f"Could not load {input_path}")
+    im = im.astype(numpy.float64)
     h, w = im.shape[:2]
     assert h + dy > 0 and w + dx > 0 and dy <= h and dx <= w
     output = im

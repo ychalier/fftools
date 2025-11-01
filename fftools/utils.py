@@ -172,13 +172,7 @@ def ffprobe(path: pathlib.Path, ffprobe="ffprobe") -> FFProbeResult:
         "-show_streams",
         path
     ]
-    result = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE)
-    if result.stdout is None:
-        raise RuntimeError("Could not open FFprobe stdout")
-    stdout = result.stdout.read()
+    stdout = subprocess.check_output(cmd)
     data = json.loads(stdout)
     if not "streams" in data:
         raise ValueError(f"Invalid FFprobe output at {path}")

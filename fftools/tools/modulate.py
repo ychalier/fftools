@@ -2,7 +2,6 @@ import pathlib
 
 import cv2
 import numpy
-import tqdm
 
 from ..tool import OneToOneTool
 from .. import utils
@@ -60,6 +59,8 @@ def modulate_video(input_path: pathlib.Path, output_path: pathlib.Path, method: 
 
 def modulate_image(input_path: pathlib.Path, output_path: pathlib.Path, method: str, alpha: float):
     src = cv2.imread(input_path.as_posix())
+    if src is None:
+        raise ValueError(f"Could not load {input_path}")
     out = filter_frame(src, method, alpha)
     cv2.imwrite(output_path.as_posix(), cv2.cvtColor(out, cv2.COLOR_GRAY2BGR))
 
