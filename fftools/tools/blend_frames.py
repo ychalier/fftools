@@ -56,7 +56,7 @@ class BlendFrames(OneToOneTool):
             else:
                 length = vin.length + self.size - 1
                 framerate = vin.framerate
-            with utils.VideoOutput(output_path, vin.width, vin.height, framerate, length) as vout:
+            with utils.VideoOutput(output_path, vin.width, vin.height, framerate, length, hide_progress=self.quiet) as vout:
                 if self.fixed:
                     running = True
                     while running:

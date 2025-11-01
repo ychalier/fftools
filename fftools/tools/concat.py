@@ -56,4 +56,4 @@ class Concat(ManyToOneTool):
             if all_images:
                 args += ["-c:v", "libx264", "-pix_fmt", "yuv420p"]
             args.append(output_path)
-            utils.ffmpeg(*args)
+            utils.ffmpeg(*args, show_stats=not self.quiet)

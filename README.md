@@ -54,6 +54,7 @@ Such one-to-one tools also support the following flags:
 - `-G, --global-progress`: show global progress when processing multiple files,
 - `-O, --overwrite`: overwrite existing files (by default, unique filenames are generated),
 - `-K, --keep-trimmed-files`: save trimmed input files next to their parent instead of a temporary folder (see paragraph below).
+- `-Q, --quiet`: suppress all output except errors, combine with `-G` to only show global progress.
 
 Many-to-one tools (like `blend-videos`, `concat` and `stack`) take their arguments in the same order (input files/folders first, then output path).
 

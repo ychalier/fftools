@@ -42,10 +42,12 @@ class DropIFrameMulti(ManyToOneTool):
                     raise ValueError(f"{input_file} has no duration")
                 if i == 0:
                     framerate = input_file.probe.framerate
-                    print("Locking framerate to", framerate)
+                    if not self.quiet:
+                        print("Locking framerate to", framerate)
                 n_frames = int(input_file.probe.duration * input_file.probe.framerate)
                 part_path = tmpdir / f"{i:09d}.avi"
-                print(f"[{i+1}/{len(inputs)}]", input_file.path.name)
+                if not self.quiet:
+                    print(f"[{i+1}/{len(inputs)}]", input_file.path.name)
                 args = []
                 if not self.allow_iframes:
                     args += [
@@ -64,6 +66,7 @@ class DropIFrameMulti(ManyToOneTool):
                     "-me_method", self.me,
                     "-forced-idr", "1",
                     part_path,
+                    show_stats=not self.quiet
                 )
                 part_paths.append(part_path)
             list_path = tmpdir / "list.txt"
@@ -76,6 +79,7 @@ class DropIFrameMulti(ManyToOneTool):
                 "-safe", "0",
                 "-i", list_path,
                 "-c", "copy",
-                xvid_path
+                xvid_path,
+                show_stats=not self.quiet
             )
-            DropIFrameSingle.drop_iframes(xvid_path, output_path)
+            DropIFrameSingle.drop_iframes(xvid_path, output_path, self.quiet)

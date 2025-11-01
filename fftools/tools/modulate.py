@@ -49,9 +49,9 @@ def filter_frame(frame: cv2.Mat | numpy.ndarray, method: str, alpha: float) -> n
     return numpy.round(numpy.abs(numpy.fft.ifft2(fft))).astype(numpy.uint8)
 
 
-def modulate_video(input_path: pathlib.Path, output_path: pathlib.Path, method: str, alpha: float):
+def modulate_video(input_path: pathlib.Path, output_path: pathlib.Path, method: str, alpha: float, quiet: bool):
     with utils.VideoInput(input_path) as vin:
-        with utils.VideoOutput(output_path, vin.width, vin.height, vin.framerate, vin.length) as vout:
+        with utils.VideoOutput(output_path, vin.width, vin.height, vin.framerate, vin.length, hide_progress=quiet) as vout:
             for frame_in in vin:
                 frame_out = filter_frame(frame_in, method, alpha)
                 vout.feed(cv2.cvtColor(frame_out, cv2.COLOR_GRAY2RGB))
@@ -93,5 +93,5 @@ class Modulate(OneToOneTool):
         if input_file.path.suffix.lower() in [".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp", ".avif"]:
             modulate_image(input_file.path, output_path, self.method, self.alpha)
         else:
-            modulate_video(input_file.path, output_path, self.method, self.alpha)
+            modulate_video(input_file.path, output_path, self.method, self.alpha, self.quiet)
         return output_path

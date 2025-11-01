@@ -50,7 +50,8 @@ class Split(OneToOneTool):
                 "-i", input_file.path,
                 "-ss", utils.format_timestamp(time_start),
                 "-to", utils.format_timestamp(time_end),
-                output_path
+                output_path,
+                show_stats=not self.quiet
             )
         assert output_path is not None
         return output_path.parent

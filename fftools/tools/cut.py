@@ -48,7 +48,8 @@ class Cut(OneToOneTool):
                     input_file.path,
                     "-vf",
                     f"crop={width}:{height}:{j * width}:{i * height}",
-                    output_path
+                    output_path,
+                    show_stats=not self.quiet
                 )
         assert output_path is not None
         return output_path.parent

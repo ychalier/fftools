@@ -131,7 +131,7 @@ class Squeeze(OneToOneTool):
             "duplication": self.duplication,
         })
         with utils.VideoInput(input_file.path) as vin:
-            with utils.VideoOutput(output_path, vin.width, vin.height, vin.framerate * self.duplication, vin.length * self.duplication) as vout:
+            with utils.VideoOutput(output_path, vin.width, vin.height, vin.framerate * self.duplication, vin.length * self.duplication, hide_progress=self.quiet) as vout:
                 for input_frame_index, inframe in enumerate(vin):
                     for duplication_index in range(self.duplication):
                         outframe = self.squeeze(inframe, vin.length, input_frame_index, duplication_index, vin.width, vin.height)

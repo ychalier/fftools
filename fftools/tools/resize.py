@@ -174,5 +174,6 @@ class Resize(OneToOneTool):
             "-i", input_file.path,
             "-vf", vf,
             output_path,
+            show_stats=not self.quiet
         )
         return output_path

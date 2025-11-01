@@ -49,6 +49,8 @@ class TestTools(unittest.TestCase):
 
     def _test_one_to_one_tool(self, cls: type[OneToOneTool], video: bool, *args, **kwargs) -> pathlib.Path:
         tool = cls(cls.OUTPUT_PATH_TEMPLATE, *args, **kwargs)
+        tool.overwrite = True
+        tool.quiet = True
         output_path = tool.process(self.input_video if video else self.input_image)
         self.assertIsNotNone(output_path)
         assert output_path is not None
@@ -57,6 +59,7 @@ class TestTools(unittest.TestCase):
 
     def _test_many_to_one_tool(self, cls: type[ManyToOneTool], *args, **kwargs) -> pathlib.Path:
         tool = cls(*args, **kwargs)
+        tool.quiet = True
         output_path = self.folder / "out.mp4"
         if output_path.exists():
             os.remove(output_path)

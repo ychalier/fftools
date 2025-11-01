@@ -46,7 +46,7 @@ class Timestamp(OneToOneTool):
                     start = self.timestamp
                 if input_file.probe.duration is None:
                     raise ValueError("Video has no duration")
-                for t in tqdm.tqdm(range(start, start + math.ceil(input_file.probe.duration))):
+                for t in tqdm.tqdm(range(start, start + math.ceil(input_file.probe.duration)), disable=self.quiet):
                     d = datetime.datetime.fromtimestamp(t)
                     text = d.strftime("%Y-%m-%d %H:%M:%S")
                     mask_image = self.font.getmask(text, "L")
@@ -67,13 +67,15 @@ class Timestamp(OneToOneTool):
                 "-i", listfile_path,
                 "-c:v", "libx264",
                 "-pix_fmt", "yuv420p",
-                banner_path
+                banner_path,
+                show_stats=not self.quiet
             )
             output_path = self.inflate(input_file.path)
             utils.ffmpeg(
                 "-i", input_file.path,
                 "-i", banner_path,
                 "-filter_complex", "overlay=shortest=1",
-                output_path
+                output_path,
+                show_stats=not self.quiet
             )
         return output_path

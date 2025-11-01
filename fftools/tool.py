@@ -2,6 +2,8 @@ import argparse
 import pathlib
 import time
 
+import tqdm
+
 from . import utils
 
 
@@ -10,8 +12,8 @@ class Tool:
     NAME = None
     DESC = None
 
-    def __init__(self):
-        pass
+    def __init__(self, quiet: bool = False):
+        self.quiet = quiet
 
     @staticmethod
     def add_arguments(parser: argparse.ArgumentParser):
@@ -26,8 +28,8 @@ class OneToOneTool(Tool):
 
     OUTPUT_PATH_TEMPLATE = "{parent}/{stem}{suffix}"
 
-    def __init__(self, template: str | None):
-        Tool.__init__(self)
+    def __init__(self, template: str | None, quiet: bool = False):
+        Tool.__init__(self, quiet)
         self.template = template if template is not None else self.OUTPUT_PATH_TEMPLATE
         self.overwrite = False
 
@@ -44,6 +46,8 @@ class OneToOneTool(Tool):
             help="show global progress if multiple inputs are provided")
         group.add_argument("-K", "--keep-trimmed-files", action="store_true",
             help="save trimmed input files next to their parent instead of tempdir")
+        group.add_argument("-Q", "--quiet", action="store_true",
+            help="do not print anything")
 
     @classmethod
     def run(cls, args: argparse.Namespace):
@@ -54,15 +58,21 @@ class OneToOneTool(Tool):
         overwrite = kwargs.pop("overwrite", False)
         global_progress = kwargs.pop("global_progress", False)
         keep_trimmed_files = kwargs.pop("keep_trimmed_files", False)
+        quiet = kwargs.pop("quiet", False)
         tool = cls(template, **kwargs)
+        tool.quiet = quiet
         tool.overwrite = overwrite
         inputs = utils.expand_paths([input_path])
         for input_file in inputs:
             input_file.preprocess(use_temporary_file=not keep_trimmed_files)
         n = len(inputs)
         time_start = time.time()
+        show_pbar = quiet and global_progress
+        pbar = tqdm.tqdm(unit="file", total=len(inputs), disable=not show_pbar)
         for i, input_file in enumerate(inputs):
-            if n > 1 and global_progress:
+            if show_pbar:
+                pbar.set_description(input_file.path.name)
+            if n > 1 and global_progress and not show_pbar:
                 elapsed = time.time() - time_start
                 if i >= 1:
                     speed = elapsed / i
@@ -71,8 +81,11 @@ class OneToOneTool(Tool):
                 else:
                     print(f"[{i+1}/{n}] {input_file.path.as_posix()}")
             output_path = tool.process(input_file)
+            if show_pbar:
+                pbar.update(1)
             if len(inputs) == 1 and output_path is not None and not no_execute:
                 utils.startfile(output_path)
+        pbar.close()
 
     def inflate(self, input_path: pathlib.Path, context: dict = {}) -> pathlib.Path:
         path = utils.format_path(self.template, {
@@ -102,14 +115,18 @@ class ManyToOneTool(Tool):
         group = parser.add_argument_group("processing options")
         group.add_argument("-K", "--keep-trimmed-files", action="store_true",
             help="save trimmed input files next to their parent instead of tempdir")
+        group.add_argument("-Q", "--quiet", action="store_true",
+            help="do not print anything")
 
     @classmethod
     def run(cls, args: argparse.Namespace):
         kwargs = vars(args)
         input_paths = kwargs.pop("input_paths")
         keep_trimmed_files = kwargs.pop("keep_trimmed_files", False)
+        quiet = kwargs.pop("quiet", False)
         output_path = utils.find_unique_path(pathlib.Path(kwargs.pop("output_path")))
         tool = cls(**kwargs)
+        tool.quiet = quiet
         inputs = utils.expand_paths(input_paths, sort=tool.SORT)
         for input_file in inputs:
             input_file.preprocess(use_temporary_file=not keep_trimmed_files)

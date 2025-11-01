@@ -33,6 +33,7 @@ class Preview(OneToOneTool):
             "-vf", "select='%s'" % ("+".join(["eq(n\\,%d)" % i for i in frame_indices])),
             "-vsync", "0",
             folder / "%06d.png",
+            show_stats=not self.quiet
         )
 
     def _merge_frames(self, folder: pathlib.Path, output_path: pathlib.Path):

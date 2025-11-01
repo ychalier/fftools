@@ -25,6 +25,7 @@ class Batch(OneToOneTool):
         utils.ffmpeg(
             "-i", input_file.path,
             *self.args,
-            output_path
+            output_path,
+            show_stats=not self.quiet,
         )
         return output_path

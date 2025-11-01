@@ -86,4 +86,4 @@ class Stack(ManyToOneTool):
         args += ["-filter_complex", ";".join(filter_args)]
         args += ["-map", "[v]"]
         args.append(output_path)
-        utils.ffmpeg(*args)
+        utils.ffmpeg(*args, show_stats=not self.quiet)

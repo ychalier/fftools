@@ -35,6 +35,7 @@ class BlendToImage(OneToOneTool):
             "-ss", self.start_time,
             "-t", self.duration,
             folder / "%06d.png",
+            show_stats=not self.quiet,
         )
 
     def _merge_frames(self, folder: pathlib.Path, output_path: pathlib.Path):

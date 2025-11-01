@@ -67,7 +67,7 @@ class Carve(OneToOneTool):
             "width": target_width,
             "height": target_height,
         })
-        seam_carve(input_file.path, dx, dy, output_path)
+        seam_carve(input_file.path, dx, dy, output_path, quiet=self.quiet)
         return output_path
 
 
@@ -76,7 +76,8 @@ def seam_carve(
         dx: int,
         dy: int,
         output_path: pathlib.Path,
-        use_forward_energy: bool = True
+        use_forward_energy: bool = True,
+        quiet: bool = False
         ):
     import cv2, numba, numpy, scipy.ndimage
 
@@ -238,7 +239,7 @@ def seam_carve(
         total += abs(dy)
     else:
         total += 2 * dy 
-    pbar = tqdm.tqdm(total=total)
+    pbar = tqdm.tqdm(total=total, disable=quiet)
     if dx < 0:
         output = seams_removal(output, -dx, pbar)
     elif dx > 0:

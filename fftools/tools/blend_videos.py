@@ -46,7 +46,7 @@ class BlendVideos(ManyToOneTool):
             for video_input in video_inputs:
                 stack.enter_context(video_input)
             min_length = min(vin.length for vin in video_inputs)
-            with utils.VideoOutput(output_path, video_inputs[0].width, video_inputs[0].height, video_inputs[0].framerate, min_length) as vout:
+            with utils.VideoOutput(output_path, video_inputs[0].width, video_inputs[0].height, video_inputs[0].framerate, min_length, hide_progress=self.quiet) as vout:
                 while True:
                     frames: list[numpy.ndarray] = []
                     stop = False
@@ -84,7 +84,7 @@ class BlendVideos(ManyToOneTool):
                     cmd += ["-t", self.duration]
                 template = temp_folder / "%09d.png"
                 cmd += [template]
-                utils.ffmpeg(*cmd)
+                utils.ffmpeg(*cmd, show_stats=not self.quiet)
                 folders.append(temp_folder)
             if not folders:
                 warnings.warn("No input found")
@@ -102,7 +102,7 @@ class BlendVideos(ManyToOneTool):
                 framerate = self.framerate
             if height is None or framerate is None:
                 raise ValueError("Some video output parameters are not defined")
-            with utils.VideoOutput(output_path, width, height, framerate, min_size) as vout:
+            with utils.VideoOutput(output_path, width, height, framerate, min_size, hide_progress=self.quiet) as vout:
                 for j in range(min_size):
                     frames = []
                     for folder in folders:

@@ -32,6 +32,7 @@ class Scenes(OneToOneTool):
             "-vsync", "vfr",
             "-frame_pts", "true",
             output_path / "%06d.png",
+            show_stats=not self.quiet
         )
     
     def _load_frame(self, image_path: pathlib.Path):
@@ -57,14 +58,15 @@ class Scenes(OneToOneTool):
         if not paths:
             return
         current_frame = self._load_frame(paths.pop(0))
-        for path in tqdm.tqdm(paths, desc="Removing duplicates"):
+        for path in tqdm.tqdm(paths, desc="Removing duplicates", disable=self.quiet):
             next_frame = self._load_frame(path)
             if self._frame_comparator(current_frame, next_frame):
                 os.remove(path)
                 removed_count += 1
             else:
                 current_frame = next_frame
-        print("Removed", removed_count, "of", frame_count, "frames")
+        if not self.quiet:
+            print("Removed", removed_count, "of", frame_count, "frames")
     
     def process(self, input_file: utils.InputFile) -> pathlib.Path:
         output_path = self.inflate(input_file.path)

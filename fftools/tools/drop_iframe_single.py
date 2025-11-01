@@ -92,7 +92,7 @@ class DropIFrameSingle(OneToOneTool):
 
         part_paths: list[pathlib.Path] = []
         with utils.tempdir() as tmpdir:
-            with utils.VideoInput(input_path, hide_progress=False) as vin:
+            with utils.VideoInput(input_path, hide_progress=self.quiet) as vin:
                 prev_frame = None
                 for j, (part_start, part_end) in enumerate(zip(stops, stops[1:])):
                     part_path = tmpdir / f"{j:09d}.avi"
@@ -136,7 +136,8 @@ class DropIFrameSingle(OneToOneTool):
                 "-safe", "0",
                 "-i", list_path,
                 "-c", "copy",
-                output_path
+                output_path,
+                show_stats=not self.quiet
             )
 
     @staticmethod
@@ -149,7 +150,7 @@ class DropIFrameSingle(OneToOneTool):
         return long_name == "MPEG-4 part 2"
 
     @staticmethod
-    def drop_iframes(input_path: pathlib.Path, output_path: pathlib.Path):
+    def drop_iframes(input_path: pathlib.Path, output_path: pathlib.Path, quiet: bool = False):
         import av
         assert DropIFrameSingle.is_xvid(input_path), input_path
         with utils.tempdir() as tmpdir:
@@ -184,7 +185,8 @@ class DropIFrameSingle(OneToOneTool):
                 "-fflags", "+genpts",
                 "-r", str(probe.framerate),
                 "-i", badpts_path,
-                output_path
+                output_path,
+                show_stats=not quiet
             )
 
     def process(self, input_file: utils.InputFile) -> pathlib.Path:
@@ -194,5 +196,5 @@ class DropIFrameSingle(OneToOneTool):
             preprocessed_path = self.inflate(input_file.path, {"state": "mosh_pre"}).with_suffix(".avi")
             self.apply_frame_map(input_file.path, preprocessed_path)
         output_path = self.inflate(input_file.path, {"state": "mosh_post"})
-        self.drop_iframes(preprocessed_path, output_path)
+        self.drop_iframes(preprocessed_path, output_path, self.quiet)
         return output_path

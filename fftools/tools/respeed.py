@@ -47,7 +47,8 @@ class Respeed(OneToOneTool):
                     "-map", "0:v",
                     "-c:v", "copy",
                     "-bsf:v", "h264_mp4toannexb",
-                    folder / "raw.h264"
+                    folder / "raw.h264",
+                    show_stats=not self.quiet
                 )
                 utils.ffmpeg(
                     "-fflags", "+genpts",
@@ -55,6 +56,7 @@ class Respeed(OneToOneTool):
                     "-i", folder / "raw.h264",
                     "-c:v", "copy",
                     output_path,
+                    show_stats=not self.quiet
                 )
         else:
             utils.ffmpeg(
@@ -62,5 +64,6 @@ class Respeed(OneToOneTool):
                 "-an",
                 "-vf", f"setpts={1/speedup}*PTS",
                 output_path,
+                show_stats=not self.quiet
             )
         return output_path
