@@ -1,9 +1,15 @@
 import datetime
 import math
 import pathlib
+import sys
 
 from ..tool import OneToOneTool
 from .. import utils
+
+
+DEFAULT_FONT_PATH = "courbd.ttf"
+if sys.platform == "linux":
+    DEFAULT_FONT_PATH = "/usr/share/fonts/TTF/DejaVuSansMono.ttf"
 
 
 class Timestamp(OneToOneTool):
@@ -16,7 +22,7 @@ class Timestamp(OneToOneTool):
             template: str,
             timestamp: int | None = None,
             font_size: int = 36,
-            font_path: str = "courbd.ttf",
+            font_path: str = DEFAULT_FONT_PATH,
             padding: int = 16,
             color: tuple[int, int, int, int] = (255, 255, 255, 255)):
         OneToOneTool.__init__(self, template)
@@ -33,7 +39,7 @@ class Timestamp(OneToOneTool):
         OneToOneTool.add_arguments(parser)
         parser.add_argument("-t", "--timestamp", type=int, help="start timestamp", default=None)
         parser.add_argument("-s", "--font-size", type=int, help="font size", default=36)
-        parser.add_argument("-f", "--font-path", type=str, help="font size", default="courbd.ttf")
+        parser.add_argument("-f", "--font-path", type=str, help="font size", default=DEFAULT_FONT_PATH)
         parser.add_argument("-p", "--padding", type=int, help="padding", default=16)
 
     def process(self, input_file: utils.InputFile) -> pathlib.Path:

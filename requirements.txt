@@ -4,3 +4,5 @@ Pillow
 tqdm
 python-dateutil
 av
+numba
+scipy
