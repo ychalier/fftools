@@ -57,13 +57,16 @@ class TestTools(unittest.TestCase):
         self.assertTrue(output_path.exists())
         return output_path
 
-    def _test_many_to_one_tool(self, cls: type[ManyToOneTool], *args, **kwargs) -> pathlib.Path:
+    def _test_many_to_one_tool(self, cls: type[ManyToOneTool], video: bool, *args, **kwargs) -> pathlib.Path:
         tool = cls(*args, **kwargs)
         tool.quiet = True
-        output_path = self.folder / "out.mp4"
+        output_path = (self.folder / "out.mp4") if video else (self.folder / "out.png")
         if output_path.exists():
             os.remove(output_path)
-        tool.process([self.input_video, self.input_video, self.input_video], output_path)
+        if video:
+            tool.process([self.input_video, self.input_video, self.input_video], output_path)
+        else:
+            tool.process([self.input_image, self.input_image, self.input_image], output_path)
         self.assertTrue(output_path.exists())
         return output_path
 
@@ -72,9 +75,12 @@ class TestTools(unittest.TestCase):
         
     def test_blend_to_image(self):
         self._test_one_to_one_tool(fftools.tools.BlendToImage, True)
+    
+    def test_blend_images(self):
+        self._test_many_to_one_tool(fftools.tools.BlendImages, False)
         
     def test_blend_videos(self):
-        self._test_many_to_one_tool(fftools.tools.BlendVideos)
+        self._test_many_to_one_tool(fftools.tools.BlendVideos, True)
     
     def test_carve(self):
         self._test_one_to_one_tool(fftools.tools.Carve, False, width=self.WIDTH-1, height=self.HEIGHT+1)
@@ -84,7 +90,7 @@ class TestTools(unittest.TestCase):
             self._test_one_to_one_tool(fftools.tools.Cut, video, max_width=self.WIDTH//2, max_height=self.HEIGHT//2)
 
     def test_drop_iframe_multi(self):
-        self._test_many_to_one_tool(fftools.tools.DropIFrameMulti)
+        self._test_many_to_one_tool(fftools.tools.DropIFrameMulti, True)
     
     def test_drop_iframe_single(self):
         self._test_one_to_one_tool(fftools.tools.DropIFrameSingle, True, preserve_timings=True, iframe="True")
@@ -120,7 +126,7 @@ class TestTools(unittest.TestCase):
         self._test_one_to_one_tool(fftools.tools.Squeeze, True)
     
     def test_stack(self):
-        self._test_many_to_one_tool(fftools.tools.Stack)
+        self._test_many_to_one_tool(fftools.tools.Stack, True)
     
     def test_timestamp(self):
         self._test_one_to_one_tool(fftools.tools.Timestamp, True)
