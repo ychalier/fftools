@@ -20,7 +20,7 @@ class Tool:
         raise NotImplementedError()
 
     @classmethod
-    def run(cls, args: argparse.Namespace):
+    def run_from_args(cls, args: argparse.Namespace):
         raise NotImplementedError()
 
 
@@ -48,9 +48,22 @@ class OneToOneTool(Tool):
             help="save trimmed input files next to their parent instead of tempdir")
         group.add_argument("-Q", "--quiet", action="store_true",
             help="do not print anything")
+    
+    def run(self,
+            input_path: pathlib.Path,
+            execute: bool = False,
+            overwrite: bool = False,
+            quiet: bool = True):
+        self.quiet = quiet
+        self.overwrite = overwrite
+        input_file = utils.InputFile(input_path)
+        input_file.preprocess()
+        output_path = self.process(input_file)
+        if execute:
+            utils.startfile(output_path)
 
     @classmethod
-    def run(cls, args: argparse.Namespace):
+    def run_from_args(cls, args: argparse.Namespace):
         kwargs = vars(args)
         input_path = kwargs.pop("input_path")
         template = kwargs.pop("output_path", None)
@@ -117,9 +130,22 @@ class ManyToOneTool(Tool):
             help="save trimmed input files next to their parent instead of tempdir")
         group.add_argument("-Q", "--quiet", action="store_true",
             help="do not print anything")
+    
+    def run(self,
+            input_paths: list[pathlib.Path],
+            output_path: pathlib.Path,
+            execute: bool = False,
+            quiet: bool = True):
+        self.quiet = quiet
+        input_files = [utils.InputFile(input_path) for input_path in input_paths]
+        for input_file in input_files:
+            input_file.preprocess()
+        output_path = self.process(input_files, output_path)
+        if execute:
+            utils.startfile(output_path)
 
     @classmethod
-    def run(cls, args: argparse.Namespace):
+    def run_from_args(cls, args: argparse.Namespace):
         kwargs = vars(args)
         input_paths = kwargs.pop("input_paths")
         keep_trimmed_files = kwargs.pop("keep_trimmed_files", False)
