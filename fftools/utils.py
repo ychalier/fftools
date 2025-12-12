@@ -234,7 +234,7 @@ def escape_path_chars(string: str) -> str:
 
 def format_path(template: str, kwargs: dict) -> pathlib.Path:
     return pathlib.Path(template.format(**{
-        key: value if key == "parent" else escape_path_chars(str(value))
+        key: value if key == "parent" else (escape_path_chars(value) if isinstance(value, str) else value)
         for key, value in kwargs.items()
     }))
 

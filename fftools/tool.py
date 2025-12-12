@@ -28,10 +28,11 @@ class OneToOneTool(Tool):
 
     OUTPUT_PATH_TEMPLATE = "{parent}/{stem}{suffix}"
 
-    def __init__(self, template: str | None, quiet: bool = False):
+    def __init__(self, template: str | None, quiet: bool = False, initial_counter: int = 0):
         Tool.__init__(self, quiet)
         self.template = template if template is not None else self.OUTPUT_PATH_TEMPLATE
         self.overwrite = False
+        self.counter = initial_counter
 
     @staticmethod
     def add_arguments(parser: argparse.ArgumentParser):
@@ -48,6 +49,9 @@ class OneToOneTool(Tool):
             help="save trimmed input files next to their parent instead of tempdir")
         group.add_argument("-Q", "--quiet", action="store_true",
             help="do not print anything")
+        group.add_argument("--counter", type=int, default=0,
+            help="initial value for the processing counter, which can be used"
+            "in output path templates")
     
     def run(self,
             input_path: pathlib.Path,
@@ -59,6 +63,7 @@ class OneToOneTool(Tool):
         input_file = utils.InputFile(input_path)
         input_file.preprocess()
         output_path = self.process(input_file)
+        self.counter += 1
         if execute:
             utils.startfile(output_path)
 
@@ -71,10 +76,12 @@ class OneToOneTool(Tool):
         overwrite = kwargs.pop("overwrite", False)
         global_progress = kwargs.pop("global_progress", False)
         keep_trimmed_files = kwargs.pop("keep_trimmed_files", False)
+        counter = kwargs.pop("counter", 0)
         quiet = kwargs.pop("quiet", False)
         tool = cls(template, **kwargs)
         tool.quiet = quiet
         tool.overwrite = overwrite
+        tool.counter = counter
         inputs = utils.expand_paths([input_path])
         for input_file in inputs:
             input_file.preprocess(use_temporary_file=not keep_trimmed_files)
@@ -94,6 +101,7 @@ class OneToOneTool(Tool):
                 else:
                     print(f"[{i+1}/{n}] {input_file.path.as_posix()}")
             output_path = tool.process(input_file)
+            tool.counter += 1
             if show_pbar:
                 pbar.update(1)
             if len(inputs) == 1 and output_path is not None and not no_execute:
@@ -105,6 +113,7 @@ class OneToOneTool(Tool):
             "parent": input_path.parent.as_posix(),
             "stem": input_path.stem,
             "suffix": input_path.suffix,
+            "counter": self.counter,
             **context
         })
         path.parent.mkdir(exist_ok=True, parents=True)
