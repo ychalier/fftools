@@ -57,15 +57,35 @@ class OneToOneTool(Tool):
             input_path: pathlib.Path,
             execute: bool = False,
             overwrite: bool = False,
-            quiet: bool = True):
+            quiet: bool = True
+            ) -> pathlib.Path | None:
         self.quiet = quiet
         self.overwrite = overwrite
         input_file = utils.InputFile(input_path)
-        input_file.preprocess()
         output_path = self.process(input_file)
         self.counter += 1
         if execute:
             utils.startfile(output_path)
+        return output_path
+    
+    def run_batch(self,
+            input_paths: list[pathlib.Path],
+            overwrite: bool = False,
+            quiet: bool = True
+            ) -> list[pathlib.Path | None]:
+        self.quiet = quiet
+        self.overwrite = overwrite
+        input_files = [utils.InputFile(input_path) for input_path in input_paths]
+        output_paths = []
+        pbar = tqdm.tqdm(unit="file", total=len(input_files), disable=not quiet)
+        for input_file in input_files:
+            pbar.set_description(input_file.path.name)
+            output_path = self.process(input_file)
+            self.counter += 1
+            pbar.update(1)
+            output_paths.append(output_path)
+        pbar.close()
+        return output_paths
 
     @classmethod
     def run_from_args(cls, args: argparse.Namespace):
