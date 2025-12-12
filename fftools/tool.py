@@ -140,7 +140,7 @@ class ManyToOneTool(Tool):
         input_files = [utils.InputFile(input_path) for input_path in input_paths]
         for input_file in input_files:
             input_file.preprocess()
-        output_path = self.process(input_files, output_path)
+        self.process(input_files, output_path)
         if execute:
             utils.startfile(output_path)
 
