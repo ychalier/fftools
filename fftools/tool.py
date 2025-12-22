@@ -55,14 +55,19 @@ class OneToOneTool(Tool):
     
     def run(self,
             input_path: pathlib.Path,
+            output_path: pathlib.Path | None = None,
             execute: bool = False,
             overwrite: bool = False,
-            quiet: bool = True
+            quiet: bool = True,
             ) -> pathlib.Path | None:
         self.quiet = quiet
         self.overwrite = overwrite
         input_file = utils.InputFile(input_path)
+        template_bak = self.template
+        if output_path is not None:
+            self.template = output_path.as_posix()
         output_path = self.process(input_file)
+        self.template = template_bak
         self.counter += 1
         if execute:
             utils.startfile(output_path)
