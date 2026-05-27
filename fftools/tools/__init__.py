@@ -9,6 +9,7 @@ from .concat import Concat
 from .cut import Cut
 from .drop_iframe_single import DropIFrameSingle
 from .drop_iframe_multi import DropIFrameMulti
+from .fakelines import FakeLines
 from .modulate import Modulate
 from .preview import Preview
 from .probe import Probe
@@ -33,6 +34,7 @@ TOOL_LIST: list[type[Tool]] = [
     Cut,
     DropIFrameMulti,
     DropIFrameSingle,
+    FakeLines,
     Modulate,
     Preview,
     Probe,
