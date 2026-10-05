@@ -216,6 +216,23 @@ def ffprobe(path: pathlib.Path, ffprobe="ffprobe") -> FFProbeResult:
     return FFProbeResult(width, height, framerate, duration, size, creation)
 
 
+def ffprobe_pict_types(path: pathlib.Path, ffprobe: str = "ffprobe") -> list[str]:
+    cmd = [
+        ffprobe,
+        "-v", "quiet",
+        "-print_format",
+        "json",
+        "-show_frames",
+        path
+    ]
+    stdout = subprocess.check_output(cmd)
+    data = json.loads(stdout)
+    return [
+        frame.get("pict_type")
+        for frame in data["frames"]
+    ]   
+
+
 def find_unique_path(base_path: pathlib.Path) -> pathlib.Path:
     path = pathlib.Path(base_path)
     while path.exists():
