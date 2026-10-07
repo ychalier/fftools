@@ -131,6 +131,10 @@ class TestTools(unittest.TestCase):
     def test_timestamp(self):
         self._test_one_to_one_tool(fftools.tools.Timestamp, True)
 
+    def test_run(self):
+        fftools.tools.Resize((self.folder / "_test_run.png").as_posix(), width=16).run(self.input_image.path)
+        fftools.tools.Stack(True, False, 1, 2).run([self.input_image.path, self.input_image.path], self.folder / "_test_run.png")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -32,7 +32,13 @@ class InputFile:
         self.trim_end: str | None = trim_end
         if self.trim_end == "":
             self.trim_end = None
-        self.probe: 'FFProbeResult' = ffprobe(self.real_path)
+        self._probe: 'FFProbeResult | None' = None
+    
+    @property
+    def probe(self) -> 'FFProbeResult':
+        if self._probe is None:
+            self._probe = ffprobe(self.path)
+        return self._probe
     
     def __eq__(self, value: object) -> bool:
         if isinstance(value, InputFile):
@@ -80,7 +86,7 @@ class InputFile:
         if end_timestamp is not None:
             command += ["-to", end_timestamp]
         ffmpeg("-i", self.real_path, *command, self.path)
-        self.probe = ffprobe(self.path)
+        self._probe = None
 
 
 def expand_paths(argstrings: list[str], sort: bool = False) -> list[InputFile]:
@@ -210,6 +216,23 @@ def ffprobe(path: pathlib.Path, ffprobe="ffprobe") -> FFProbeResult:
     return FFProbeResult(width, height, framerate, duration, size, creation)
 
 
+def ffprobe_pict_types(path: pathlib.Path, ffprobe: str = "ffprobe") -> list[str]:
+    cmd = [
+        ffprobe,
+        "-v", "quiet",
+        "-print_format",
+        "json",
+        "-show_frames",
+        path
+    ]
+    stdout = subprocess.check_output(cmd)
+    data = json.loads(stdout)
+    return [
+        frame.get("pict_type")
+        for frame in data["frames"]
+    ]   
+
+
 def find_unique_path(base_path: pathlib.Path) -> pathlib.Path:
     path = pathlib.Path(base_path)
     while path.exists():
@@ -228,7 +251,7 @@ def escape_path_chars(string: str) -> str:
 
 def format_path(template: str, kwargs: dict) -> pathlib.Path:
     return pathlib.Path(template.format(**{
-        key: value if key == "parent" else escape_path_chars(str(value))
+        key: value if key == "parent" else (escape_path_chars(value) if isinstance(value, str) else value)
         for key, value in kwargs.items()
     }))
 

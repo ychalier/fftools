@@ -20,7 +20,7 @@ class Tool:
         raise NotImplementedError()
 
     @classmethod
-    def run(cls, args: argparse.Namespace):
+    def run_from_args(cls, args: argparse.Namespace):
         raise NotImplementedError()
 
 
@@ -28,10 +28,11 @@ class OneToOneTool(Tool):
 
     OUTPUT_PATH_TEMPLATE = "{parent}/{stem}{suffix}"
 
-    def __init__(self, template: str | None, quiet: bool = False):
+    def __init__(self, template: str | None, quiet: bool = False, initial_counter: int = 0):
         Tool.__init__(self, quiet)
         self.template = template if template is not None else self.OUTPUT_PATH_TEMPLATE
         self.overwrite = False
+        self.counter = initial_counter
 
     @staticmethod
     def add_arguments(parser: argparse.ArgumentParser):
@@ -48,9 +49,51 @@ class OneToOneTool(Tool):
             help="save trimmed input files next to their parent instead of tempdir")
         group.add_argument("-Q", "--quiet", action="store_true",
             help="do not print anything")
+        group.add_argument("--counter", type=int, default=0,
+            help="initial value for the processing counter, which can be used"
+            "in output path templates")
+    
+    def run(self,
+            input_path: pathlib.Path,
+            output_path: pathlib.Path | None = None,
+            execute: bool = False,
+            overwrite: bool = False,
+            quiet: bool = True,
+            ) -> pathlib.Path | None:
+        self.quiet = quiet
+        self.overwrite = overwrite
+        input_file = utils.InputFile(input_path)
+        template_bak = self.template
+        if output_path is not None:
+            self.template = output_path.as_posix()
+        output_path = self.process(input_file)
+        self.template = template_bak
+        self.counter += 1
+        if execute:
+            utils.startfile(output_path)
+        return output_path
+    
+    def run_batch(self,
+            input_paths: list[pathlib.Path],
+            overwrite: bool = False,
+            quiet: bool = True
+            ) -> list[pathlib.Path | None]:
+        self.quiet = quiet
+        self.overwrite = overwrite
+        input_files = [utils.InputFile(input_path) for input_path in input_paths]
+        output_paths = []
+        pbar = tqdm.tqdm(unit="file", total=len(input_files), disable=not quiet)
+        for input_file in input_files:
+            pbar.set_description(input_file.path.name)
+            output_path = self.process(input_file)
+            self.counter += 1
+            pbar.update(1)
+            output_paths.append(output_path)
+        pbar.close()
+        return output_paths
 
     @classmethod
-    def run(cls, args: argparse.Namespace):
+    def run_from_args(cls, args: argparse.Namespace):
         kwargs = vars(args)
         input_path = kwargs.pop("input_path")
         template = kwargs.pop("output_path", None)
@@ -58,10 +101,12 @@ class OneToOneTool(Tool):
         overwrite = kwargs.pop("overwrite", False)
         global_progress = kwargs.pop("global_progress", False)
         keep_trimmed_files = kwargs.pop("keep_trimmed_files", False)
+        counter = kwargs.pop("counter", 0)
         quiet = kwargs.pop("quiet", False)
         tool = cls(template, **kwargs)
         tool.quiet = quiet
         tool.overwrite = overwrite
+        tool.counter = counter
         inputs = utils.expand_paths([input_path])
         for input_file in inputs:
             input_file.preprocess(use_temporary_file=not keep_trimmed_files)
@@ -81,6 +126,7 @@ class OneToOneTool(Tool):
                 else:
                     print(f"[{i+1}/{n}] {input_file.path.as_posix()}")
             output_path = tool.process(input_file)
+            tool.counter += 1
             if show_pbar:
                 pbar.update(1)
             if len(inputs) == 1 and output_path is not None and not no_execute:
@@ -92,6 +138,7 @@ class OneToOneTool(Tool):
             "parent": input_path.parent.as_posix(),
             "stem": input_path.stem,
             "suffix": input_path.suffix,
+            "counter": self.counter,
             **context
         })
         path.parent.mkdir(exist_ok=True, parents=True)
@@ -117,9 +164,22 @@ class ManyToOneTool(Tool):
             help="save trimmed input files next to their parent instead of tempdir")
         group.add_argument("-Q", "--quiet", action="store_true",
             help="do not print anything")
+    
+    def run(self,
+            input_paths: list[pathlib.Path],
+            output_path: pathlib.Path,
+            execute: bool = False,
+            quiet: bool = True):
+        self.quiet = quiet
+        input_files = [utils.InputFile(input_path) for input_path in input_paths]
+        for input_file in input_files:
+            input_file.preprocess()
+        self.process(input_files, output_path)
+        if execute:
+            utils.startfile(output_path)
 
     @classmethod
-    def run(cls, args: argparse.Namespace):
+    def run_from_args(cls, args: argparse.Namespace):
         kwargs = vars(args)
         input_paths = kwargs.pop("input_paths")
         keep_trimmed_files = kwargs.pop("keep_trimmed_files", False)

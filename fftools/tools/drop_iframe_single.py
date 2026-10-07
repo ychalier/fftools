@@ -83,6 +83,10 @@ class DropIFrameSingle(OneToOneTool):
         if self.iframe_expr is not None:
             is_iframe = parse_lambda_expression(self.iframe_expr, ("i",), {"fps": probe_result.framerate})
             stops = list(filter(is_iframe, range(n_frames + 1)))
+        else:
+            pict_types = utils.ffprobe_pict_types(input_path)
+            stops = [i for i in range(n_frames + 1) if pict_types[i] == "I"]
+
         if len(stops) == 0:
             stops.append(0)
         if stops[0] != 0:

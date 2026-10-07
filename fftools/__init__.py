@@ -48,7 +48,7 @@ def main():
         raise ValueError(f"Could not find tool class for tool '{args.tool}'")
     delattr(args, "tool")
     try:
-        tool_cls.run(args)
+        tool_cls.run_from_args(args)
     except KeyboardInterrupt:
         print(OKBLUE + "Interrupting" + ENDC)
     except FileNotFoundError as err:
