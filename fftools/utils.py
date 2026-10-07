@@ -492,7 +492,7 @@ def getop(opname: str) -> typing.Callable:
         case "sum":
             return lambda a: numpy.sum(a, axis=0)
         case "difference":
-            return lambda a: a[0] - numpy.sum(a[1:], axis=0)
+            return lambda a: numpy.abs(a[0] - numpy.sum(a[1:], axis=0))
         case "weight1":
             return weighted_sum(1)
         case "weight3":
